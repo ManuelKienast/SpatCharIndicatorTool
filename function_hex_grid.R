@@ -22,7 +22,7 @@ library(RPostgreSQL)
 #creates connection to the database 
 
 
-
+print("hi")
 
 hexgrid <- function(con, hex_width, schema1, table, schema2, name) {
   
