@@ -147,7 +147,7 @@ PlayArea <- function(
     SELECT * Into %s FROM 
     (SELECT
     SubCell_ID,
-    ROUND((sum(playgroundarea)/sum(childpersubcell))::decimal, 2) AS PG_Child
+    ROUND((sum(playgroundarea)/sum(distinct(childpersubcell)))::decimal, 2) AS PG_Child
     FROM result
     Group by SubCell_ID
     order by SubCell_ID ) as foo;
