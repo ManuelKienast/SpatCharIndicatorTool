@@ -33,7 +33,7 @@ library(RODBC)
 
 ## Creating the db connection
 drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5433", user = "postgres", password = "postgres") 
+con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
 dbListTables(con)
 
 
