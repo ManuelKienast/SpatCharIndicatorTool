@@ -147,7 +147,8 @@ PlayArea <- function(
     SELECT * Into %s FROM 
     (SELECT
     SubCell_ID,
-    ROUND((sum(playgroundarea)/sum(distinct(childpersubcell)))::decimal, 2) AS PG_Child
+    ROUND((sum(playgroundarea)/sum(distinct(childpersubcell)))::decimal, 2) AS PG_Child,
+    sum(distinct(childpersubcell)) As SumChildPerArea
     FROM result
     Group by SubCell_ID
     order by SubCell_ID ) as foo;
@@ -246,7 +247,8 @@ dbDisconnect(con)
 #     SELECT * Into RESULT_PlayArea FROM 
 #       (SELECT
 #         SubCell_ID,
-#         sum(playgroundarea)/sum(childpersubcell) AS PlayGroundPerChild
+#         sum(playgroundarea)/sum(distinct(childpersubcell)) AS PlayGroundPerChild,
+#         sum(distinct(childpersubcell)) As SumChildPerArea
 #           FROM result
 #   GROUP BY SubCell_ID
 #   ORDER BY SubCell_ID ) as foo;
