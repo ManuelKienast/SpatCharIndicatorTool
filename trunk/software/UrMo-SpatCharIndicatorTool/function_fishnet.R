@@ -14,20 +14,20 @@
 
 
 #-----------------------------------------------------------------------------------------------------------------------------
-setwd("X:\\DLR\\Daten")
-
-library(rgdal)
-library(RPostgreSQL)
-
-#creates connection to the database 
-con <- dbConnect(dbDriver("PostgreSQL"),
-                 dbname = "DLR",
-                 host = "localhost",
-                 user = "postgres", 
-                 password = "postgres")
-
-#Lists all tables of chosen database
-dbListTables(con)
+# setwd("X:\\DLR\\Daten")
+# 
+# library(rgdal)
+# library(RPostgreSQL)
+# 
+# #creates connection to the database 
+# con <- dbConnect(dbDriver("PostgreSQL"),
+#                  dbname = "DLR",
+#                  host = "localhost",
+#                  user = "postgres", 
+#                  password = "postgres")
+# 
+# #Lists all tables of chosen database
+# dbListTables(con)
 
 
 x_cell      # Cellwidth in unit of chosen  SRID
@@ -97,16 +97,16 @@ fishnet <- function(con, x_cell, y_cell, schema1, table, schema2, name) {
 
 #Usage:
 
-fishnet(con, 2000, 2000, "public", "tvz", "public", "fishnet")
-
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-#disconnect DB Connection
-dbDisconnect(con)
+# fishnet(con, 2000, 2000, "public", "tvz", "public", "fishnet")
+# 
+# 
+# 
+# 
+# #-----------------------------------------------------------------------------------------------------------------------
+# 
+# 
+# #disconnect DB Connection
+# dbDisconnect(con)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
