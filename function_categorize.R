@@ -5,19 +5,19 @@
 
 
 
-library(RPostgreSQL)
-library(rgdal)
-
-
-#creates connection to the database 
-con <- dbConnect(dbDriver(  "PostgreSQL"),
-                 dbname =   "dlr",
-                 host =     "localhost",
-                 user =     "postgres", 
-                 password = "postgres")
-
-#lists all tables of chosen database
-dbListTables(con)
+# library(RPostgreSQL)
+# library(rgdal)
+# 
+# 
+# #creates connection to the database 
+# con <- dbConnect(dbDriver(  "PostgreSQL"),
+#                  dbname =   "dlr",
+#                  host =     "localhost",
+#                  user =     "postgres", 
+#                  password = "postgres")
+# 
+# #lists all tables of chosen database
+# dbListTables(con)
 
 #----------------------------PARAMETERS-------------------------------------------------------------------------------------------
 
@@ -116,16 +116,16 @@ categorize <- function(connection, tableAggregation, AggrField, tableCategory, c
 
 #function(connection, tableAggregation, AggrField, tableCategory, crit1Field, crit2Field, crit1LV1, crit1LV2, crit1LV3, crit2Sep, output1, output2)
 
-categorize(con, "tvz","vbz_no", "mietobjekte", "anzahletag", "baujahr", 1, 2, 6, 1948, "categories_tvz", "cat_tvz_count") 
-
-categorize(con, "hex_mietobjekte","gid", "mietobjekte", "anzahletag", "baujahr", 1, 2, 6, 1948, "categories_tvz", "cat_tvz_count")
-
-
-#---------------------------------------------------------------------------------------------------------------------------------------------
-
-
-#disconnect DB Connection
-dbDisconnect(con)
+# categorize(con, "tvz","vbz_no", "mietobjekte", "anzahletag", "baujahr", 1, 2, 6, 1948, "categories_tvz", "cat_tvz_count") 
+# 
+# categorize(con, "hex_mietobjekte","gid", "mietobjekte", "anzahletag", "baujahr", 1, 2, 6, 1948, "categories_tvz", "cat_tvz_count")
+# 
+# 
+# #---------------------------------------------------------------------------------------------------------------------------------------------
+# 
+# 
+# #disconnect DB Connection
+# dbDisconnect(con)
 
 
 
