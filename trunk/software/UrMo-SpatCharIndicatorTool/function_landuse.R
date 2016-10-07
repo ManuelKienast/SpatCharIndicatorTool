@@ -26,15 +26,15 @@
 
 
 
-setwd("d:\\Projekt\\")
-#install.packages("L:\\Projekt\\Packages\\RPostgreSQL_0.4-1.zip",repos = NULL) 
-#install.packages("L:\\Projekt\\Packages\\DBI_0.5.zip", repos = NULL)
-library(RPostgreSQL)
-
-## Connect to database
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "dlr2", host = "localhost", user = "postgres", password = "postgres") 
-dbListTables(con)
+# setwd("d:\\Projekt\\")
+# #install.packages("L:\\Projekt\\Packages\\RPostgreSQL_0.4-1.zip",repos = NULL) 
+# #install.packages("L:\\Projekt\\Packages\\DBI_0.5.zip", repos = NULL)
+# library(RPostgreSQL)
+# 
+# ## Connect to database
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "dlr2", host = "localhost", user = "postgres", password = "postgres") 
+# dbListTables(con)
 
 
 #Gives the proportion of areas of a selected category per aggregation cell.
@@ -42,7 +42,7 @@ dbListTables(con)
 
 areaRatio <- function(con, schema = "public", table, category, aggr_schema = "public", aggregation, aggr_id, out_schema = "public", output, intersection = "intersection") {
   #creates a table intersecting the input data with aggregation cells
-  #erstellt eine Tabelle die die überschneiden Flächen von Landuse mit den Flächen der TVZ je TVZ ausgibt
+  #erstellt eine Tabelle die die ?berschneiden Fl?chen von Landuse mit den Fl?chen der TVZ je TVZ ausgibt
   interSection <- dbGetQuery(con, sprintf(
     "DROP TABLE IF EXISTS %s;
       CREATE TABLE %s (gid serial PRIMARY KEY, aggr_unit integer, use varchar);
@@ -54,7 +54,7 @@ areaRatio <- function(con, schema = "public", table, category, aggr_schema = "pu
       ", intersection, intersection, intersection, intersection, aggr_id, category, schema, table, aggr_schema, aggregation))
 
   #calculates the part of area per aggregation unit 
-  #Berechnet den Flächenanteil pro landuse-Kategorie in jeder TVZ
+  #Berechnet den Fl?chenanteil pro landuse-Kategorie in jeder TVZ
     ratio <- dbGetQuery(con, sprintf(
       "DROP TABLE IF EXISTS %s.%s;
       CREATE TABLE %s.%s (gid serial PRIMARY KEY, aggr_unit varchar, category varchar, area numeric, ratio numeric); 
@@ -83,10 +83,10 @@ areaRatio <- function(con, schema = "public", table, category, aggr_schema = "pu
 
 
 
-#-----------------------------------------------------------------------------------------------------------------------
-
-#disconnect DB Connection
-dbDisconnect(con)
+# #-----------------------------------------------------------------------------------------------------------------------
+# 
+# #disconnect DB Connection
+# dbDisconnect(con)
 
 #-----------------------------------------------------------------------------------------------------------------------
 
