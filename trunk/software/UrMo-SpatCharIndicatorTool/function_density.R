@@ -33,10 +33,10 @@
 # the density.
 # If the chosen area of examination is not a (Multi)Polygon an Error-Message will be returned
 
-setwd("X:\\DLR\\Daten")
-
-# Required Library
-library(RPostgreSQL)
+# setwd("X:\\DLR\\Daten")
+# 
+# # Required Library
+# library(RPostgreSQL)
 
 #Variable that will be used to establish the connection to the database
 
@@ -142,23 +142,23 @@ dsty = function(con, schema1, ex_area, schema2, obj, output) {
 
 #----------------------------------------------------------------------------------------------------------------------
 
-#Usage:
-
-con = dbConnect(dbDriver("PostgreSQL"), dbname = "dlr", host = "localhost", 
-                user = "postgres", password = "postgres") 
-
-
-dsty(con, "test", "hex_grid", "public", "strassennetzb_rbs_od_blk_2015_mitte", "output1")
-
-
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-#disconnect DB Connection
-dbDisconnect(con)
+# #Usage:
+# 
+# con = dbConnect(dbDriver("PostgreSQL"), dbname = "dlr", host = "localhost", 
+#                 user = "postgres", password = "postgres") 
+# 
+# 
+# dsty(con, "test", "hex_grid", "public", "strassennetzb_rbs_od_blk_2015_mitte", "output1")
+# 
+# 
+# 
+# 
+# 
+# #-----------------------------------------------------------------------------------------------------------------------
+# 
+# 
+# #disconnect DB Connection
+# dbDisconnect(con)
 
 #SQL-Queries:
 
