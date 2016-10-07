@@ -30,11 +30,11 @@
 library(RPostgreSQL)
 library(rgdal)
 library(RODBC)
-
-## Creating the db connection
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
-dbListTables(con)
+# 
+# ## Creating the db connection
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
+# dbListTables(con)
 
 
 ## For the computation three steps are necessary:
@@ -173,30 +173,30 @@ PlayArea <- function(
   ResultPlayArea
 }
 
-##---------------- with defaults see above --------------------
-#Usage:
-PlayArea()
-
-
-##---------------- with Fishnet already in db as "fishnet" ----------------
-#Usage:  
-PlayArea( Agg = "fishnet", Agg_ID = "gid" )
-
-
-## --------------- childcol allows for selection of age group, as present in the datafile
-
-# age: 0-6   -->  "kinderu6j"
-# age: 6-12  -->  "kinder6_12"
-# age: 12-18 -->  "kinder12_1"
-# age: 0-18  -->  "kinder0_18"
-#
-# additionally, setting childage as "(kinderu6j+kinder6_12)" will produce the PlayGroundArea for the 0-12 years age group.
-
-PlayArea( childage = "(kinderu6j+kinder6_12)")
+# ##---------------- with defaults see above --------------------
+# #Usage:
+# PlayArea()
+# 
+# 
+# ##---------------- with Fishnet already in db as "fishnet" ----------------
+# #Usage:  
+# PlayArea( Agg = "fishnet", Agg_ID = "gid" )
+# 
+# 
+# ## --------------- childcol allows for selection of age group, as present in the datafile
+# 
+# # age: 0-6   -->  "kinderu6j"
+# # age: 6-12  -->  "kinder6_12"
+# # age: 12-18 -->  "kinder12_1"
+# # age: 0-18  -->  "kinder0_18"
+# #
+# # additionally, setting childage as "(kinderu6j+kinder6_12)" will produce the PlayGroundArea for the 0-12 years age group.
+# 
+# PlayArea( childage = "(kinderu6j+kinder6_12)")
 
 
 ##---------------- disconnect DB Connection ------------------
-dbDisconnect(con)
+# dbDisconnect(con)
 
 
 
