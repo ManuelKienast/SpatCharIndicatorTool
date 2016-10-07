@@ -23,16 +23,16 @@
 #
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
-## Setting Up
-setwd("d:\\__projekt\\")
-library(RPostgreSQL)
-library(rgdal)
-library(RODBC)
-
-## Erstellen der DB-Verbindung
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", user = "postgres", password = "postgres") 
-dbListTables(con)
+# ## Setting Up
+# setwd("d:\\__projekt\\")
+# library(RPostgreSQL)
+# library(rgdal)
+# library(RODBC)
+# 
+# ## Erstellen der DB-Verbindung
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "DLR", host = "localhost", user = "postgres", password = "postgres") 
+# dbListTables(con)
 
 
 
@@ -84,7 +84,7 @@ Ratio <- function(
   
 }
 
-Ratio()
+# Ratio()
 
 
 
@@ -156,7 +156,7 @@ RatioStats <- function(
   RatioStats
 }
 
-RatioStats()
+# RatioStats()
 
 
 
