@@ -20,16 +20,16 @@
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
 
-## Setting Up
-setwd("d:\\__projekt\\")
-library(RPostgreSQL)
-library(rgdal)
-library(RODBC)
+# ## Setting Up
+# setwd("d:\\__projekt\\")
+# library(RPostgreSQL)
+# library(rgdal)
+# library(RODBC)
 
-## Erstellen der DB-Verbindung
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", user = "postgres", password = "postgres") 
-dbListTables(con)
+# ## Erstellen der DB-Verbindung
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "DLR", host = "localhost", user = "postgres", password = "postgres") 
+# dbListTables(con)
 
 
 
@@ -90,17 +90,17 @@ psqlAvMean <- function(
 }
 
 
-##------------- default ----------------------------------------------------------------------
-#Usage:
-psqlAvMean()
-
-##------------- with fishnet as grid cells-----------------------------------------------------
-#Usage:
-psqlAvMean(table2 = "fishnet", Id2 = "gid")
-
-
-##--------------with buildings in tvz -----------------------
-psqlAvMean(table1 = "buildings", Id1 = "gid")
+# ##------------- default ----------------------------------------------------------------------
+# #Usage:
+# psqlAvMean()
+# 
+# ##------------- with fishnet as grid cells-----------------------------------------------------
+# #Usage:
+# psqlAvMean(table2 = "fishnet", Id2 = "gid")
+# 
+# 
+# ##--------------with buildings in tvz -----------------------
+# psqlAvMean(table1 = "buildings", Id1 = "gid")
 
 
 
