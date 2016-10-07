@@ -25,11 +25,11 @@
 #
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
-## Setting Up
-## setwd("d:\\__projekt\\")
-library(RPostgreSQL)
-library(rgdal)
-library(RODBC)
+# ## Setting Up
+# ## setwd("d:\\__projekt\\")
+# library(RPostgreSQL)
+# library(rgdal)
+# library(RODBC)
 # 
 # ## Creating the db connection
 # drv <- dbDriver("PostgreSQL")
