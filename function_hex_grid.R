@@ -15,14 +15,14 @@
 #-----------------------------------------------------------------------------------------------------------------------------
 
 
-setwd("X:\\DLR\\Daten")
-library(rgdal)
-library(RPostgreSQL)
+# setwd("X:\\DLR\\Daten")
+# library(rgdal)
+# library(RPostgreSQL)
 
 #creates connection to the database 
 
 
-print("hi")
+
 
 hexgrid <- function(con, hex_width, schema1, table, schema2, name) {
   
@@ -101,25 +101,25 @@ hexgrid <- function(con, hex_width, schema1, table, schema2, name) {
 
 #----------------------------------------------------------------------------------------------------------------------
 
-#Usage:
-
-con <- dbConnect(dbDriver("PostgreSQL"),
-                 dbname = "urmo",
-                 host = "localhost",
-                 user = "postgres", 
-                 password = "postgres")
-
-
-
-hexgrid(con, 500, "urmo", "tvz", "public", "hex_grid_500")
-
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-
-#disconnect DB Connection
-dbDisconnect(con)
+# #Usage:
+# 
+# con <- dbConnect(dbDriver("PostgreSQL"),
+#                  dbname = "urmo",
+#                  host = "localhost",
+#                  user = "postgres", 
+#                  password = "postgres")
+# 
+# 
+# 
+# hexgrid(con, 500, "urmo", "tvz", "public", "hex_grid_500")
+# 
+# 
+# 
+# #-----------------------------------------------------------------------------------------------------------------------
+# 
+# 
+# #disconnect DB Connection
+# dbDisconnect(con)
 
 
 #SQL-Queries:
