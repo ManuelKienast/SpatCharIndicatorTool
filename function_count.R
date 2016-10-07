@@ -1,5 +1,5 @@
 # Christina am 08.09.2016
-# Zählt Polygone z.B. Gebaeude, die in einem Abschnitt liegen
+# Z?hlt Polygone z.B. Gebaeude, die in einem Abschnitt liegen
 
 
 
@@ -28,15 +28,15 @@
 
 
 
-setwd("d:\\Projekt\\")
-#install.packages("L:\\Projekt\\Packages\\RPostgreSQL_0.4-1.zip",repos = NULL) 
-#install.packages("L:\\Projekt\\Packages\\DBI_0.5.zip", repos = NULL)
-library(RPostgreSQL)
-
-## Connect to database
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "dlr", host = "localhost", user = "postgres", password = "postgres") 
-dbListTables(con)
+# setwd("d:\\Projekt\\")
+# #install.packages("L:\\Projekt\\Packages\\RPostgreSQL_0.4-1.zip",repos = NULL) 
+# #install.packages("L:\\Projekt\\Packages\\DBI_0.5.zip", repos = NULL)
+# library(RPostgreSQL)
+# 
+# ## Connect to database
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "dlr", host = "localhost", user = "postgres", password = "postgres") 
+# dbListTables(con)
 
 
 
@@ -106,8 +106,8 @@ countPolis2 <- function(con, schema, table, to_count, aggr_schema, aggregation, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-#disconnect DB Connection
-dbDisconnect(con)
+# #disconnect DB Connection
+# dbDisconnect(con)
 
 #-----------------------------------------------------------------------------------------------------------------------
 
