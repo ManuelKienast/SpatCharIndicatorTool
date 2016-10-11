@@ -30,12 +30,12 @@
 # dbListTables(con)
 
 
-x_cell      # Cellwidth in unit of chosen  SRID
-y_cell      # Cellheighth in unit of chosen SRID
-schema1     # Name of the Schema in which the reference layer table is located
-table       # Reference layer for extent
-schema2     # Name of the Schema in which the Fishnet shall be created
-name        # Name of output table
+# x_cell      # Cellwidth in unit of chosen  SRID
+# y_cell      # Cellheighth in unit of chosen SRID
+# schema1     # Name of the Schema in which the reference layer table is located
+# table       # Reference layer for extent
+# schema2     # Name of the Schema in which the Fishnet shall be created
+# name        # Name of output table
 
 
 
