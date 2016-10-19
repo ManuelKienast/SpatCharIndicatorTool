@@ -121,4 +121,3 @@ testing_1 <-testing %>%
 
 testing$dev<- abs(testing$train_param-testing$preds)
 print (mean(testing$dev))
-
