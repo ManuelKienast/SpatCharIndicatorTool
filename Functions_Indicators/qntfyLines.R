@@ -6,24 +6,43 @@
 
 
 
+## FOR PERSONAL USE
+# ## Creating the db connection
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
+# dbListTables(con)
+# 
+# 
+# ## Defintion of Variables:
+# connection = con
+# Agg_Area ="planungsraum_mitte"
+# Agg_ID = "schluessel"
+# Agg_geom = "geom"
+# Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
+# Ex_Obj = "strklasse"
+# Ex_geom = "geom"
+
+
+## FOR USAGE ON URMO
+## Creating the db connection
+drv <- dbDriver("PostgreSQL")
+con <- dbConnect(drv, dbname = "urmo", host = "129.247.28.69", port= "5432", user = "urmo", password = "urmo") 
+dbListTables(con)
+
+
+## Defintion of Variables:
+connection = con
+Agg_Area ="urmo.plr"
+Agg_ID = "plr_id"
+Agg_geom = "the_geom"
+Ex_Area = "osm.berlin_network"
+Ex_Obj = "osm_type"
+Ex_geom = "shape"
+
 setwd("d:\\Manuel\\git\\Urmo-SpatCharIndicatorTool")
 library(RPostgreSQL)
 library(rgdal)
 library(RODBC)
-
-## Creating the db connection
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
-dbListTables(con)
-
-## Defintion of Variables:
-connection = con
-Agg_Area ="planungsraum_mitte"
-Agg_ID = "schluessel"
-Agg_geom = "geom"
-Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
-Ex_Obj = "strklasse"
-Ex_geom = "geom"
 
 
 ##
@@ -33,13 +52,13 @@ Ex_geom = "geom"
 ## writing intersection table
   
 createInterSecTable <- function (
-    connection = con,
-    Agg_Area ="planungsraum_mitte",
-    Agg_ID = "schluessel",
-    Agg_geom = "geom",
-    Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte",
-    Ex_Obj = "strklasse",
-    Ex_geom = "geom"
+    
+    Agg_Area,
+    Agg_ID,
+    Agg_geom,
+    Ex_Area,
+    Ex_Obj,
+    Ex_geom
   ) 
   {
     
@@ -55,9 +74,9 @@ createInterSecTable <- function (
       --Ex_Obj.vmax AS speed,	
       ST_Multi(ST_Intersection(Agg_Area.%s, Ex_Obj.%s))::geometry(multiLineString, 25833) as geom
       FROM
-      planungsraum_mitte AS Agg_Area
-      LEFT JOIN strassennetzb_rbs_od_blk_2015_mitte AS Ex_Obj
-      ON (ST_INTERSECTS(Agg_Area.geom, ST_Transform(Ex_Obj.geom, 25833)))
+      %s AS Agg_Area
+      LEFT JOIN %s AS Ex_Obj
+      ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Obj.%s, 25833)))
       ) as foo;
       
       ALTER TABLE InterSec ADD PRIMARY KEY (key);",
@@ -123,7 +142,7 @@ return(VDist)
     ))  
   
   return(resultTable)
-  print(resultTable)
+ 
  }
  
 
@@ -212,17 +231,17 @@ ratioLines2Table <- function (
 ## the complete Function
 
 qntfyLines <- function (
-                        connection = con,
-                        Agg_Area ="planungsraum_mitte",
-                        Agg_ID = "schluessel",
-                        Agg_geom = "geom",
-                        Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte",
-                        Ex_Obj = "strklasse",
-                        Ex_geom = "geom"
+                        
+                        Agg_Area,
+                        Agg_ID,
+                        Agg_geom,
+                        Ex_Area,
+                        Ex_Obj,
+                        Ex_geom
                         )
 
 {
-intersectTable <- createInterSecTable()
+intersectTable <- createInterSecTable(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
 VDist <- getVDist()
 
@@ -239,93 +258,93 @@ for (i in VDist) {ratioLines2Table(i)}
 
 }
 
-qntfyLines()
+qntfyLines(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
   
 
 
 
-#################### PLAYGORUND ##################### 
-############### BEWARE OF STRAY FUNCTS ##############
-
-VectorDist <- dbGetQuery(con, sprintf("SELECT DISTINCT linetype FROM Intersec;"))
-str(VectorDist)
-
-veclist <- VectorDist[,1]
-str(veclist)
-
-for (i in veclist)  {
-  x = paste(i,2)
-  print(x)
-  }
-
-lapply(VectorDist, function(x) paste(x,2))
-
-
-
-########################################################################################################
-########################################################################################################
-##   RAW SQL - Code
-########################################################################################################
-
-
---- Create InterSec table holding Linestrings cut to Agg_Area-size tagged with Agg_area_ID
-DROP TABLE IF EXISTS InterSec;
-SELECT * INTO InterSec FROM (
-  SELECT 
-  Agg_Area.schluessel AS Agg_ID,
-  Ex_Obj.strklasse AS LineType,
-  --Ex_Obj.vmax AS speed,	
-  ST_Multi(ST_Intersection(Agg_Area.geom, Ex_Obj.geom))::geometry(multiLineString, 25833) as geom
-  FROM
-  planungsraum_mitte AS Agg_Area LEFT JOIN 
-  strassennetzb_rbs_od_blk_2015_mitte AS Ex_Obj
-  ON (ST_INTERSECTS(Agg_Area.geom, ST_Transform(Ex_Obj.geom, 25833)))
-) as foo;
-
---- Adds a pKey to the table as SERIAL
-ALTER TABLE InterSec ADD COLUMN key_column SERIAL PRIMARY KEY;
-SELECT * FROM InterSec;
-
--- Select for creation of the R-vector to loop through for distance calcs
-SELECT DISTINCT linetype 
-FROM Intersec
-WHERE linetype LIKE 'highway%'
-;
-
--- create result table with Agg_Area_Id and its geom to select othe results into
-DROP TABLE IF EXISTS result;
-SELECT schluessel AS Agg_Id, geom 
-INTO result 
-FROM planungsraum_mitte AS Agg_Area;
-SELECT * FROM RESULT;
-
--- loop through this using the V(Distinct); calc total length of items listed in vector(Dist) and write to table
-
-ALTER TABLE result ADD COLUMN sum_G FLOAT;
-
-UPDATE result 
-SET sum_G = foo.sum_G
-FROM (SELECT 
-      Agg_ID,
-      SUM(ST_Length(geom))/1000 AS sum_G
-      FROM InterSec
-      WHERE lineType = 'G'
-      GROUP BY Agg_ID
-      ORDER BY Agg_ID
-) as foo
-WHERE result.Agg_ID = foo.Agg_ID
-;
-
--- calc the total length of selected line types
-
-ALTER TABLE result ADD COLUMN sum_length FLOAT;
-UPDATE result 
-SET sum_length = sum_g  -- summation of all values listed in the V(Dist)
-;
-
---- loop adding the columns for the ratios and then filling them with value(dist)/sum_length
-
-
-SELECT * FROM result
-ORDER BY Agg_ID;
+# #################### PLAYGORUND ##################### 
+# ############### BEWARE OF STRAY FUNCTS ##############
+# 
+# VectorDist <- dbGetQuery(con, sprintf("SELECT DISTINCT linetype FROM Intersec;"))
+# str(VectorDist)
+# 
+# veclist <- VectorDist[,1]
+# str(veclist)
+# 
+# for (i in veclist)  {
+#   x = paste(i,2)
+#   print(x)
+#   }
+# 
+# lapply(VectorDist, function(x) paste(x,2))
+# 
+# 
+# 
+# ########################################################################################################
+# ########################################################################################################
+# ##   RAW SQL - Code
+# ########################################################################################################
+# 
+# 
+# --- Create InterSec table holding Linestrings cut to Agg_Area-size tagged with Agg_area_ID
+# DROP TABLE IF EXISTS InterSec;
+# SELECT * INTO InterSec FROM (
+#   SELECT 
+#   Agg_Area.schluessel AS Agg_ID,
+#   Ex_Obj.strklasse AS LineType,
+#   --Ex_Obj.vmax AS speed,	
+#   ST_Multi(ST_Intersection(Agg_Area.geom, Ex_Obj.geom))::geometry(multiLineString, 25833) as geom
+#   FROM
+#   planungsraum_mitte AS Agg_Area LEFT JOIN 
+#   strassennetzb_rbs_od_blk_2015_mitte AS Ex_Obj
+#   ON (ST_INTERSECTS(Agg_Area.geom, ST_Transform(Ex_Obj.geom, 25833)))
+# ) as foo;
+# 
+# --- Adds a pKey to the table as SERIAL
+# ALTER TABLE InterSec ADD COLUMN key_column SERIAL PRIMARY KEY;
+# SELECT * FROM InterSec;
+# 
+# -- Select for creation of the R-vector to loop through for distance calcs
+# SELECT DISTINCT linetype 
+# FROM Intersec
+# WHERE linetype LIKE 'highway%'
+# ;
+# 
+# -- create result table with Agg_Area_Id and its geom to select othe results into
+# DROP TABLE IF EXISTS result;
+# SELECT schluessel AS Agg_Id, geom 
+# INTO result 
+# FROM planungsraum_mitte AS Agg_Area;
+# SELECT * FROM RESULT;
+# 
+# -- loop through this using the V(Distinct); calc total length of items listed in vector(Dist) and write to table
+# 
+# ALTER TABLE result ADD COLUMN sum_G FLOAT;
+# 
+# UPDATE result 
+# SET sum_G = foo.sum_G
+# FROM (SELECT 
+#       Agg_ID,
+#       SUM(ST_Length(geom))/1000 AS sum_G
+#       FROM InterSec
+#       WHERE lineType = 'G'
+#       GROUP BY Agg_ID
+#       ORDER BY Agg_ID
+# ) as foo
+# WHERE result.Agg_ID = foo.Agg_ID
+# ;
+# 
+# -- calc the total length of selected line types
+# 
+# ALTER TABLE result ADD COLUMN sum_length FLOAT;
+# UPDATE result 
+# SET sum_length = sum_g  -- summation of all values listed in the V(Dist)
+# ;
+# 
+# --- loop adding the columns for the ratios and then filling them with value(dist)/sum_length
+# 
+# 
+# SELECT * FROM result
+# ORDER BY Agg_ID;
