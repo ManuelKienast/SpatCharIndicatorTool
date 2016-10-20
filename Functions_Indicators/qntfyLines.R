@@ -121,8 +121,7 @@ getVDist <- function ()
 
 VDist <- VDistdf[,1]
 
-#### replace(VDist, x == ., _)
-#### VDist[x==.] <- _
+
 return(VDist)    
 
 }
@@ -264,6 +263,10 @@ qntfyLines <- function (
 intersectTable <- createInterSecTable(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
 VDist <- getVDist()
+
+#VDist[x==.] <- _
+#### replace(VDist, x =='.','_')
+#### VDist <- VDist[x=='.']<-1
 
 resultTable <- createResultTable(Agg_ID, Agg_geom, Agg_Area)
 
