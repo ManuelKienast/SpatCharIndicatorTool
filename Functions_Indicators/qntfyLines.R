@@ -39,7 +39,7 @@ Ex_Area = "osm.berlin_network"
 Ex_Obj = "osm_type"
 Ex_geom = "shape"
 
-setwd("d:\\Manuel\\git\\Urmo-SpatCharIndicatorTool")
+#setwd("d:\\Manuel\\git\\Urmo-SpatCharIndicatorTool")
 library(RPostgreSQL)
 library(rgdal)
 library(RODBC)
@@ -66,28 +66,32 @@ createInterSecTable <- function (
       
       "DROP TABLE IF EXISTS InterSec;
       
-      SELECT * INTO InterSec FROM
+      SELECT * INTO public.InterSec FROM
       ( SELECT 
       row_number() over (order by 1) as key,
       Agg_Area.%s AS Agg_ID,
       Ex_Obj.%s AS LineType,
       --Ex_Obj.vmax AS speed,	
-      ST_Multi(ST_Intersection(Agg_Area.%s, Ex_Obj.%s))::geometry(multiLineString, 25833) as geom
+      ST_Multi(ST_Intersection(Agg_Area.%s, ST_Transform(Ex_Obj.%s, 25833)))::geometry(multiLineString, 25833) as geom
       FROM
       %s AS Agg_Area
       LEFT JOIN %s AS Ex_Obj
       ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Obj.%s, 25833)))
-      ) as foo;
+      WHERE ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(Ex_Obj.%s) = TRUE
+      ) as foo
+      
+      ;
       
       ALTER TABLE InterSec ADD PRIMARY KEY (key);",
       
-      Agg_ID,          ## Agg_Area    -- column with the unique Agg_Area_ID e.g. PLR-id
-      Ex_Obj,          ## Ex_Obj.     -- column with linetype specification
-      ## Ex_speed,                    -- column holding the max speed per line type, or any secondary objects
-      Agg_geom, Ex_geom,  ## ST_Multi -- geometrie columns of both Agg and Ex objects
-      Agg_Area,   ## planungsraum_mitte    -- table containing the Aggreation Area geometries 
-      Ex_Area,     ## LEFT JOIN       -- table caontaing the Examination Object  geometries and information here: lineTypes
-      Agg_geom, Ex_geom  ## ON        -- geometrie columns of both Agg and Ex objects
+      Agg_ID,               ## Agg_Area   -- column with the unique Agg_Area_ID e.g. PLR-id
+      Ex_Obj,               ## Ex_Obj.    -- column with linetype specification
+      ## Ex_speed,                        -- column holding the max speed per line type, or any secondary objects
+      Agg_geom, Ex_geom,    ## ST_Multi   -- geometrie columns of both Agg and Ex objects
+      Agg_Area,             ## FROM       -- table containing the Aggreation Area geometries 
+      Ex_Area,              ## LEFT JOIN  -- table containing the Examination Object  geometries and information here: lineTypes
+      Agg_geom, Ex_geom,    ## ON         -- geometrie columns of both Agg and Ex objects
+      Ex_geom, Agg_geom     ## WHERE      -- geometrie columns of both Agg and Ex objects
     ))
     
     return(intersectTable)
@@ -129,7 +133,7 @@ return(VDist)
     row_number() over (order by 1) as key,
     %s AS Agg_Id,
     %s 
-      INTO result 
+      INTO public.result 
       FROM %s AS Agg_Area;
     
     ALTER TABLE result ADD PRIMARY KEY (key);
