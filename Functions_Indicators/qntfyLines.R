@@ -1,4 +1,3 @@
-
 ## Function for qunatification of Line Types
 ## First calculating the total length of line type per Aggregation area, write those to table
 ## secondly calculation of ratio of line Type against all selected line Types
@@ -17,34 +16,23 @@ drv <- dbDriver("PostgreSQL")
 con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
 dbListTables(con)
 
+## Defintion of Variables:
+connection = con
+Agg_Area ="planungsraum_mitte"
+Agg_ID = "schluessel"
+Agg_geom = "geom"
+Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
+Ex_Obj = "strklasse"
+Ex_geom = "geom"
 
 
-
-
+##
 ## setting helper functions
-
-##########  FUNCTION  ##########
-## getting the vector of dictinct variables from Agg_Area table
-
-  getVDist <- function (con
-                        )
-    {VDistdf <- dbGetQuery(connection, sprintf(
-      "SELECT DISTINCT linetype 
-      FROM Intersec 
-      ;"))
-  
-    VDist <- VDistdf[,1]
-    return(VDist)    
-   }
-
-  getVDist()
-
-  
-
+##
 ##########  FUNCTION  ##########  
 ## writing intersection table
   
-  createInterSecTable <- function (
+createInterSecTable <- function (
     connection = con,
     Agg_Area ="planungsraum_mitte",
     Agg_ID = "schluessel",
@@ -86,8 +74,25 @@ dbListTables(con)
     return(intersectTable)
   }
   
+
+
+
+##########  FUNCTION  ##########
+## getting the vector of dictinct variables from Agg_Area table
+
+getVDist <- function ()
+{VDistdf <- dbGetQuery(connection, sprintf(
+  "SELECT DISTINCT linetype 
+  FROM Intersec 
+  ;"))
+
+VDist <- VDistdf[,1]
+return(VDist)    
+}
+
+
   
-  
+
 ##########  FUNCTION  ##########  
 ## writing results table
 ## create result table with Agg_Area_Id and its geom to select other results into
@@ -97,12 +102,12 @@ dbListTables(con)
                            Agg_geom,
                            Agg_Area
                           )
- {   resultTable <- dbGetQuery(connection, sprintf(
+ {resultTable <- dbGetQuery(connection, sprintf(
     
     "DROP TABLE IF EXISTS result;
     
   SELECT 
-    row_number() over (order by 1) as test,
+    row_number() over (order by 1) as key,
     %s AS Agg_Id,
     %s 
       INTO result 
@@ -118,28 +123,24 @@ dbListTables(con)
     ))  
   
   return(resultTable)
+  print(resultTable)
  }
  
-   resultTable <- 
 
-     createResultTable(Agg_ID, Agg_geom, Agg_Area)
-  
-  
+
+
+
 ##########  FUNCTION  ##########
 ## updating a table (create and fill columns)
 ## containing the lengths of lines per aggregation Area
   
   updateTable <- function (
-    
-    connection = con,          
-    x
-    ##VDist = VDist ## vector containing the distinct values to loop through for updating the table with
-  ) 
-  {
-    
-    UpdateLength <- dbGetQuery(connection, sprintf( 
+                          VDist
+                          ) 
+  {UpdateLength <- dbGetQuery(connection, sprintf( 
       
-      "ALTER TABLE result ADD COLUMN sum_%s FLOAT;
+      "ALTER TABLE result DROP COLUMN IF EXISTS sum_%s;
+      ALTER TABLE result ADD COLUMN sum_%s FLOAT;
       
       UPDATE result 
       SET sum_%s = foo.sum_%s
@@ -154,56 +155,93 @@ dbListTables(con)
       WHERE result.Agg_ID = foo.Agg_ID
       ;"
       ,
-      x,         ## ALTER TABLE  -- vector containing distinct values
-      x, x,  ## SET          -- vector containing distinct values
-      x,         ## SUM          -- vector containing distinct values      
-      X          ## WHERE        -- vector containing distinct values
-      
-      
+      VDist,         ## DROP COl     -- vector containing distinct values
+      VDist,         ## ALTER TABLE  -- vector containing distinct values
+      VDist, VDist,  ## SET          -- vector containing distinct values
+      VDist,         ## SUM          -- vector containing distinct values      
+      VDist          ## WHERE        -- vector containing distinct values 
+      ))
+  }
+
+
+
+
+##########  FUNCTION  ##########  
+## inserting the total length into Table results
+## calc the total length of selected line types
+
+  sumLength <- function (
+                          VDist
+                                )
+  {sumLength <- dbGetQuery(connection, sprintf(
+    
+    "UPDATE result
+    SET sum_length = COALESCE(sum_length,0)+COALESCE(sum_%s,0)  -- summation of all values listed in the V(Dist)
+    ;"
+    ,
+    VDist
     ))
   }
-  
-  ,
-  VDist,         ## ALTER TABLE  -- vector containing distinct values
-  VDist, VDist,  ## SET          -- vector containing distinct values
-  VDist,         ## SUM          -- vector containing distinct values      
-  VDist          ## WHERE        -- vector containing distinct values  
-  
 
-  
-  
-    
+
+
 ##########  FUNCTION  ##########  
 ## setting Function for line quantification
- 
- 
+
+ratioLines2Table <- function (
+                              VDist
+                                    ) 
+{   calcRatios <- dbGetQuery(connection, sprintf( 
   
+      "ALTER TABLE result DROP COLUMN IF EXISTS ratio_%s;
+      ALTER TABLE result ADD COLUMN ratio_%s FLOAT;
+  
+      UPDATE result 
+      SET ratio_%s = sum_%s/sum_length
+      ;"
+      ,
+      VDist,         ## DROP COl     -- vector containing distinct values
+      VDist,         ## ALTER TABLE  -- vector containing distinct values
+      VDist, VDist  ## SET          -- vector containing distinct values
+    ))
+}
+  
+
+
+##########  FUNCTION  ##########  
+## the complete Function
+
+qntfyLines <- function (
+                        connection = con,
+                        Agg_Area ="planungsraum_mitte",
+                        Agg_ID = "schluessel",
+                        Agg_geom = "geom",
+                        Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte",
+                        Ex_Obj = "strklasse",
+                        Ex_geom = "geom"
+                        )
+
+{
 intersectTable <- createInterSecTable()
 
+VDist <- getVDist()
 
+resultTable <- createResultTable(Agg_ID, Agg_geom, Agg_Area)
 
+for (i in VDist) {updateTable(i)}
+  
+addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE result DROP COLUMN IF EXISTS sum_length;
+                                                  ALTER TABLE result ADD COLUMN sum_length FLOAT;"))
+  
+for (i in VDist) {sumLength(i)}
 
-##-- Select for creation of the R-vector to loop through for distance calcs
+for (i in VDist) {ratioLines2Table(i)}
 
-  VDist <- getVDist()
-
-  
-
-  
-  
-  
-  
-##  -- loop through this using the V(Distinct); calc total length of items listed in vector(Dist) and write to table
-  
-  
-
+}
 
 qntfyLines()
 
-
-x <- c("G","B")
-x
-for ( i in x ) {updateTable(i)}
+  
 
 
 
