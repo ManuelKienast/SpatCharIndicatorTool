@@ -70,16 +70,16 @@ createInterSecTable <- function (
       
       SELECT * INTO public.InterSec FROM
       (SELECT 
-      row_number() over (order by 1) as key,
-      Agg_Area.%s AS Agg_ID,
-      Ex_Area.%s AS LineType,
-      --Ex_Area.vmax AS speed,	
-      ST_Multi(ST_Intersection(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))::geometry(multiLineString, 25833) as geom
-      FROM
-      %s AS Agg_Area
-      LEFT JOIN %s AS Ex_Area
-      ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-      WHERE Ex_Area.%s LIKE '%s' AND ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(Ex_Area.%s) = TRUE
+        row_number() over (order by 1) as key,
+        Agg_Area.%s AS Agg_ID,
+        Ex_Area.%s AS LineType,
+        --Ex_Area.vmax AS speed,	
+        ST_Multi(ST_Intersection(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))::geometry(multiLineString, 25833) as geom
+          FROM
+            %s AS Agg_Area
+            LEFT JOIN %s AS Ex_Area
+              ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
+                WHERE Ex_Area.%s LIKE '%s' AND ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE
       ) as foo
       
       ;
@@ -101,6 +101,8 @@ createInterSecTable <- function (
   
 
 #qntfyLines(con, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
+#
+#
 
 ##########  FUNCTION  ##########
 ## getting the vector of dictinct variables from Agg_Area table
