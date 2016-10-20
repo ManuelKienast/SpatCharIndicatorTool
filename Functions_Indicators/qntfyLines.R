@@ -79,7 +79,9 @@ createInterSecTable <- function (
             %s AS Agg_Area
             LEFT JOIN %s AS Ex_Area
               ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-                WHERE Ex_Area.%s LIKE '%s' AND ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE
+                WHERE Ex_Area.%s LIKE '%s' 
+                AND ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
+                AND ST_isSimple(Agg_Area.%s) = TRUE AND ST_isSimple(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
       ) as foo
       
       ;
@@ -93,7 +95,9 @@ createInterSecTable <- function (
       Agg_Area,                     ## FROM       -- table containing the Aggreation Area geometries 
       Ex_Area,                      ## LEFT JOIN  -- table containing the Examination Object  geometries and information here: lineTypes
       Agg_geom, Ex_geom,            ## ON         -- geometrie columns of both Agg and Ex objects
-      Ex_Obj, "highway%", Agg_geom, Ex_geom     ## WHERE      -- geometrie columns of both Agg and Ex objects
+      Ex_Obj, "highway%",    ## WHERE      -- type of Line and query for highway in its description --> its an OSM-special
+      Agg_geom, Ex_geom,     ## WHERE      -- geometrie columns of both Agg and Ex objects
+      Agg_geom, Ex_geom      ## WHERE      -- geometrie columns of both Agg and Ex objects
     ))
     
     return(intersectTable)
@@ -116,9 +120,12 @@ getVDist <- function ()
   ;"))
 
 VDist <- VDistdf[,1]
-return(VDist)    
-}
 
+#### replace(VDist, x == ., _)
+#### VDist[x==.] <- _
+return(VDist)    
+
+}
 
   
 
