@@ -18,33 +18,42 @@
 # setwd("X:\\DLR\\Daten")
 # library(rgdal)
 # library(RPostgreSQL)
+# FOR PERSONAL USE
+# ## Creating the db connection
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
+# dbListTables(con)
 
-#creates connection to the database 
+
+# #creates connection to the database 
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "urmo", host = "129.247.28.69", port= "5432", user = "urmo", password = "urmo") 
+# dbListTables(con)
 
 
 
 
-hexgrid <- function(con, hex_width, schema1, table, schema2, name) {
+hexgrid <- function(con, hex_width, Agg_Schema, Agg_Area, Agg_geom, schema2, name) {
   
-  tableS = paste(schema1, table, sep = ".")
+  tableS = paste(Agg_Schema, Agg_Area, sep = ".")
   nameS = paste(schema2, name, sep = ".")
   
   clear = dbGetQuery(con, sprintf("DROP TABLE IF EXISTS %s;", nameS))
   
-  get_SRID = dbGetQuery(con, sprintf("SELECT FIND_SRID('%s', '%s', 'the_geom');", schema1, table))
+  get_SRID = dbGetQuery(con, sprintf("SELECT FIND_SRID('%s', '%s', '%s');", Agg_Schema, Agg_Area, Agg_geom))
   
-  xmin = dbGetQuery(con, sprintf("select (st_xmin(st_extent(%s.the_geom)) - (0.5*%s)) FROM %s;", tableS, hex_width, tableS)) 
+  xmin = dbGetQuery(con, sprintf("select (st_xmin(st_extent(%s.%s)) - (0.5*%s)) FROM %s;", tableS, Agg_geom, hex_width, tableS)) 
   
-  ymin = dbGetQuery(con, sprintf("select (st_ymin(st_extent(%s.the_geom)) - (0.5*%s)) FROM %s;", tableS, hex_width, tableS)) 
+  ymin = dbGetQuery(con, sprintf("select (st_ymin(st_extent(%s.%s)) - (0.5*%s)) FROM %s;", tableS, Agg_geom, hex_width, tableS)) 
   
-  xmax = dbGetQuery(con, sprintf("select (st_xmax(st_extent(%s.the_geom)) + (0.5*%s)) FROM %s;", tableS, hex_width, tableS)) 
+  xmax = dbGetQuery(con, sprintf("select (st_xmax(st_extent(%s.%s)) + (0.5*%s)) FROM %s;", tableS, Agg_geom, hex_width, tableS)) 
   
-  ymax = dbGetQuery(con, sprintf("select (st_ymax(st_extent(%s.the_geom)) + (0.5*%s)) FROM %s;", tableS, hex_width, tableS)) 
+  ymax = dbGetQuery(con, sprintf("select (st_ymax(st_extent(%s.%s)) + (0.5*%s)) FROM %s;", tableS, Agg_geom, hex_width, tableS)) 
   
   
   create_hexgrid = dbGetQuery(con, sprintf("CREATE TABLE %s (gid serial not null primary key);
                                            
-                                           SELECT addgeometrycolumn('%s', '%s','the_geom', 0, 'POLYGON', 2);
+                                           SELECT addgeometrycolumn('%s', '%s','%s', 0, 'POLYGON', 2);
                                            
                                            CREATE OR REPLACE FUNCTION genhexagons(width float, xmin float, ymin  float, xmax float, ymax float  )
                                            
@@ -70,26 +79,36 @@ hexgrid <- function(con, hex_width, schema1, table, schema2, name) {
                                            '))';
                                            
                                            BEGIN
-                                           INSERT INTO %s (the_geom) SELECT 
-                                           st_translate(the_geom, x_series*(2*a+c)+xmin, y_series*(2*(c+a))+ymin)
+                                           INSERT INTO %s (%s) SELECT 
+                                           st_translate(%s, x_series*(2*a+c)+xmin, y_series*(2*(c+a))+ymin)
                                            
                                            from generate_series(0, ncol::int , 1) as x_series,
                                            generate_series(0, nrow::int, 1 ) as y_series,
-                                           (SELECT polygon_string::geometry as the_geom
+                                           (SELECT polygon_string::geometry as %s
                                            UNION
-                                           SELECT ST_Translate(polygon_string::geometry, b , a+c)  as the_geom
+                                           SELECT ST_Translate(polygon_string::geometry, b , a+c)  as %s
                                            ) as two_hex;
                                            
                                            
                                            
                                            ALTER TABLE %s
-                                           ALTER COLUMN the_geom TYPE geometry(Polygon, %s)
-                                           USING ST_SetSRID(the_geom, %s);
+                                           ALTER COLUMN %s TYPE geometry(Polygon, %s)
+                                           USING ST_SetSRID(%s, %s);
                                            RETURN NULL;
                                            END;
                                            $total$ LANGUAGE plpgsql;
                                            
-                                           SELECT genhexagons(%s,%s,%s,%s,%s);", nameS, schema2, name, nameS, nameS, get_SRID, get_SRID, hex_width, xmin, ymin, xmax, ymax)                   
+                                           SELECT genhexagons(%s,%s,%s,%s,%s);", 
+                                           nameS,
+                                           schema2, name, Agg_geom,
+                                           nameS, Agg_geom,
+                                           Agg_geom,
+                                           Agg_geom,
+                                           Agg_geom,
+                                           nameS,
+                                           Agg_geom, get_SRID,
+                                           Agg_geom, get_SRID,
+                                           hex_width, xmin, ymin, xmax, ymax)                   
                               
                               
                               
@@ -106,12 +125,12 @@ hexgrid <- function(con, hex_width, schema1, table, schema2, name) {
 # con <- dbConnect(dbDriver("PostgreSQL"),
 #                  dbname = "urmo",
 #                  host = "localhost",
-#                  user = "postgres", 
+#                  user = "postgres",
 #                  password = "postgres")
+
 # 
 # 
-# 
-# hexgrid(con, 500, "urmo", "tvz", "public", "hex_grid_500")
+# hexgrid(con, 500, "public", "tvz", "geom", "public", "hex_500")
 # 
 # 
 # 
