@@ -130,7 +130,7 @@ hexgrid <- function(con, hex_width, Agg_Schema, Agg_Area, Agg_geom, schema2, nam
 
 # 
 # 
-# hexgrid(con, 500, "public", "tvz", "geom", "public", "hex_500")
+# hexgrid(con, 500, "urmo", "plr", "the_geom", "public", "hex_500")
 # 
 # 
 # 
