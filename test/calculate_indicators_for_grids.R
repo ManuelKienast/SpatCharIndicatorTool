@@ -7,5 +7,5 @@ con <- dbConnect(dbDriver("PostgreSQL"),
                  password = "postgres",
                  dbname = "urmo")
 
-qntfyLines(con, "grid.hex_4000", "gid" , "the_geom", "osm.berlin_network", "osm_type", "shape")
+qntfyLines(con,"public.hex_8000_osm_ind", "grid.hex_8000", "gid" , "the_geom", "osm.berlin_network", "osm_type", "shape")
 

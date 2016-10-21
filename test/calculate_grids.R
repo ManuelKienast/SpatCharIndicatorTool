@@ -8,7 +8,7 @@ con <- dbConnect(dbDriver("PostgreSQL"),
                         dbname = "urmo")
 
 
-grids <- c(500, 1000, 2000, 4000)
+grids <- c(500, 1000, 2000, 4000, 8000)
 
 for(grid in grids){
   hexgrid(con, grid, "urmo", "plr", "the_geom", "grid", paste("hex_", grid, sep="")) 
