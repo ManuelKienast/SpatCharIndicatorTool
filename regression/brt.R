@@ -9,7 +9,7 @@ library(rpart.plot)
 
 library(plotly)
 
-col <- "trips_br"
+col <- "trips_ppr"
 idField <- "plr_id"
 
 connection <- dbConnect(dbDriver("PostgreSQL"), 
@@ -22,7 +22,9 @@ connection <- dbConnect(dbDriver("PostgreSQL"),
 queryString = paste("SET search_path TO ", "befragung", "")
 dbGetQuery(connection, queryString)
 
-df<-dbGetQuery(connection,'SELECT * FROM befragung.plr_data')
+#df<-dbGetQuery(connection,'SELECT * FROM befragung.plr_data')
+load("D:\\Simon\\git\\UrMo-Viewer\\UrMo-Viewer (PLR)\\data\\plr_data.Rdata")
+df<-plr_data
 
 colNum <- match(col,names(df))
 
@@ -73,7 +75,7 @@ data$train_param <- data[colNum]
 
 
 inTrain <- createDataPartition(y=data[,colNum],
-                               p=.75,
+                               p=1.0,
                                list=FALSE)
 
 training <- data[ inTrain,]
@@ -85,8 +87,9 @@ res <- gbm.step(data=training, gbm.x=8:(colNum-1), gbm.y = colNum, family = "gau
 names(res)
 summary(res)
 gbm.plot(res)
-#interactions <- gbm.interactions(res)
-#interactions$rank.list
+interactions <- gbm.interactions(res)
+interactions$rank.list
+testing <-training
 library(gbm)
 preds <- predict.gbm(res, testing, n.trees=res$gbm.call$best.trees, type="response")
 
@@ -121,3 +124,14 @@ testing_1 <-testing %>%
 
 testing$dev<- abs(testing$train_param-testing$preds)
 print (mean(testing$dev))
+
+write.table(total,file= paste(version_dir, "\\res_total_cluster_only.csv",sep=""))
+connection <- dbConnect(dbDriver("PostgreSQL"),
+                        host = "localhost",
+                        port = 5432,
+                        user = "postgres",
+                        password = "postgres",
+                        dbname = "urmo")
+
+psqlPutTable(connection, "befragung", "urmo_befragung", out, dropIfExists = TRUE)
+
