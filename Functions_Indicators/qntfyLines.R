@@ -6,21 +6,21 @@
 
 
 
-## FOR PERSONAL USE
-# ## Creating the db connection
-# drv <- dbDriver("PostgreSQL")
-# con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres") 
-# dbListTables(con)
-# 
-# 
-# ## Defintion of Variables:
-# connection = con
-# Agg_Area ="planungsraum_mitte"
-# Agg_ID = "schluessel"
-# Agg_geom = "geom"
-# Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
-# Ex_Obj = "strklasse"
-# Ex_geom = "geom"
+# FOR PERSONAL USE
+## Creating the db connection
+drv <- dbDriver("PostgreSQL")
+con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
+dbListTables(con)
+
+
+## Defintion of Variables:
+connection = con
+Agg_Area ="planungsraum_mitte"
+Agg_ID = "schluessel"
+Agg_geom = "geom"
+Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
+Ex_Obj = "strklasse"
+Ex_geom = "geom"
 
 #setwd("d:\\Manuel\\git\\Urmo-SpatCharIndicatorTool")
 library(RPostgreSQL)
@@ -52,6 +52,9 @@ Ex_geom = "shape"
 ##
 ##########  FUNCTION  ##########  
 ## writing intersection table
+##
+##  IMPORTANT NOTICE.Personal check WHERE clause if switching between urmo and localhost
+##
   
 createInterSecTable <- function (
     
@@ -79,9 +82,9 @@ createInterSecTable <- function (
             %s AS Agg_Area
             LEFT JOIN %s AS Ex_Area
               ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-                WHERE Ex_Area.%s LIKE '%s' 
-                AND ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
-                AND ST_isSimple(Agg_Area.%s) = TRUE AND ST_isSimple(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
+                WHERE Ex_Area.%s LIKE '%s' AND 
+                ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
+                
       ) as foo
       
       ;
@@ -121,13 +124,9 @@ getVDist <- function ()
 
 VDist <- VDistdf[,1]
 
-VDist <- gsub('\\.','_',VDist)
-
 return(VDist)    
-
 }
 
-  
 
 ##########  FUNCTION  ##########  
 ## writing results table
@@ -170,10 +169,14 @@ return(VDist)
 ##########  FUNCTION  ##########
 ## updating a table (create and fill columns)
 ## containing the lengths of lines per aggregation Area
+##
+## TROUBLE cannot loop through the necessary VDIST renamed 2 way_whatever and the necessary way.whatever for selection
+## of distinct values simultaneously, need to update the loop or else
+##
 
   
   updateTable <- function (
-                          VDist
+                      VDist
                           ) 
   {UpdateLength <- dbGetQuery(connection, sprintf( 
       
@@ -193,15 +196,14 @@ return(VDist)
       WHERE result.Agg_ID = foo.Agg_ID
       ;"
       ,
-      VDist,         ## DROP COl     -- vector containing distinct values
-      VDist,         ## ALTER TABLE  -- vector containing distinct values
-      VDist, VDist,  ## SET          -- vector containing distinct values
-      VDist,         ## SUM          -- vector containing distinct values      
-      VDist          ## WHERE        -- vector containing distinct values 
+      gsub('\\.','_',VDist) ,         ## DROP COl     -- vector containing distinct values
+      gsub('\\.','_',VDist),         ## ALTER TABLE  -- vector containing distinct values
+      gsub('\\.','_',VDist), gsub('\\.','_',VDist),  ## SET          -- vector containing distinct values
+      gsub('\\.','_',VDist),         ## SUM          -- vector containing distinct values      
+      VDist              ## WHERE        -- vector containing distinct values 
       ))
-  }
-
-
+ 
+ }
 
 
 ##########  FUNCTION  ##########  
@@ -264,16 +266,19 @@ intersectTable <- createInterSecTable(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Ob
 
 VDist <- getVDist()
 
+VDistname <- gsub('\\.','_',VDist)
+
 resultTable <- createResultTable(Agg_ID, Agg_geom, Agg_Area)
 
 for (i in VDist) {updateTable(i)}
-  
+
+
 addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE result DROP COLUMN IF EXISTS sum_length;
                                                   ALTER TABLE result ADD COLUMN sum_length FLOAT;"))
   
-for (i in VDist) {sumLength(i)}
+for (i in VDistname) {sumLength(i)}
 
-for (i in VDist) {ratioLines2Table(i)}
+for (i in VDistname) {ratioLines2Table(i)}
 
 }
 
