@@ -121,6 +121,7 @@ getVDist <- function ()
 
 VDist <- VDistdf[,1]
 
+VDist <- gsub('\\.','_',VDist)
 
 return(VDist)    
 
@@ -147,7 +148,7 @@ return(VDist)
       %s AS geom
         INTO public.result 
         FROM %s AS Agg_Area
-        WHERE ST_isValid(Agg_Area.%s) = TRUE
+        WHERE ST_isValid(Agg_Area.%s) = TRUE AND ST_isSimple(Agg_Area.%s) = TRUE
     ;
     
     ALTER TABLE result ADD PRIMARY KEY (key);"
@@ -155,7 +156,7 @@ return(VDist)
     Agg_ID,       ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
     Agg_geom,     ## SELECT #2   -- geometrie columns of Agg_Area
     Agg_Area,     ## FROM        -- table containing the Aggreation Area geometries 
-    Agg_geom      ## WHERE       -- geometrie columns of Agg_Area
+    Agg_geom, Agg_geom      ## WHERE       -- geometrie columns of Agg_Area
     ))  
   
   return(resultTable)
@@ -178,18 +179,17 @@ return(VDist)
       
       "ALTER TABLE result DROP COLUMN IF EXISTS sum_%s;
       ALTER TABLE result ADD COLUMN sum_%s FLOAT;
-      
       UPDATE result 
-      SET sum_%s = foo.sum_%s
-      FROM (
-        SELECT 
-          Agg_ID,
-          SUM(ST_Length(geom))/1000 AS sum_%s
-            FROM InterSec
-              WHERE lineType = '%s'
-              GROUP BY Agg_ID
-              ORDER BY Agg_ID
-        ) as foo
+        SET sum_%s = foo.sum_%s
+          FROM (
+            SELECT 
+              Agg_ID,
+              SUM(ST_Length(geom))/1000 AS sum_%s
+                FROM InterSec
+                WHERE lineType = '%s'
+                GROUP BY Agg_ID
+                ORDER BY Agg_ID
+            ) as foo
       WHERE result.Agg_ID = foo.Agg_ID
       ;"
       ,
@@ -263,10 +263,6 @@ qntfyLines <- function (
 intersectTable <- createInterSecTable(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
 VDist <- getVDist()
-
-#VDist[x==.] <- _
-#### replace(VDist, x =='.','_')
-#### VDist <- VDist[x=='.']<-1
 
 resultTable <- createResultTable(Agg_ID, Agg_geom, Agg_Area)
 
