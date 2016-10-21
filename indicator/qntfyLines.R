@@ -8,19 +8,19 @@
 
 # FOR PERSONAL USE
 ## Creating the db connection
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
-dbListTables(con)
+#drv <- dbDriver("PostgreSQL")
+#con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
+#dbListTables(con)
 
 
 ## Defintion of Variables:
-connection = con
-Agg_Area ="planungsraum_mitte"
-Agg_ID = "schluessel"
-Agg_geom = "geom"
-Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
-Ex_Obj = "strklasse"
-Ex_geom = "geom"
+# connection = con
+# Agg_Area ="planungsraum_mitte"
+# Agg_ID = "schluessel"
+# Agg_geom = "geom"
+# Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
+# Ex_Obj = "strklasse"
+# Ex_geom = "geom"
 
 #setwd("d:\\Manuel\\git\\Urmo-SpatCharIndicatorTool")
 library(RPostgreSQL)
@@ -28,21 +28,18 @@ library(rgdal)
 library(RODBC)
 
 
-## FOR USAGE ON URMO
-## Creating the db connection
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "urmo", host = "129.247.28.69", port= "5432", user = "urmo", password = "urmo") 
-dbListTables(con)
+
+
 
 
 ## Defintion of Variables:
-connection = con
-Agg_Area ="urmo.plr"
-Agg_ID = "plr_id"
-Agg_geom = "the_geom"
-Ex_Area = "osm.berlin_network"
-Ex_Obj = "osm_type"
-Ex_geom = "shape"
+# connection = con
+# Agg_Area ="urmo.plr"
+# Agg_ID = "plr_id"
+# Agg_geom = "the_geom"
+# Ex_Area = "osm.berlin_network"
+# Ex_Obj = "osm_type"
+# Ex_geom = "shape"
 
 
 
@@ -57,7 +54,7 @@ Ex_geom = "shape"
 ##
   
 createInterSecTable <- function (
-    
+    connection,
     Agg_Area,
     Agg_ID,
     Agg_geom,
@@ -115,7 +112,7 @@ createInterSecTable <- function (
 ## getting the vector of dictinct variables from Agg_Area table
 ## reminder: switch WHERE linetype to 'highway%' for OSM data, otherwise no WHERE is needed
 
-getVDist <- function ()
+getVDist <- function (connection)
 {VDistdf <- dbGetQuery(connection, sprintf(
   "SELECT DISTINCT linetype 
   FROM Intersec
@@ -132,12 +129,12 @@ return(VDist)
 ## writing results table
 ## create result table with Agg_Area_Id and its geom to select other results into
   
-  createResultTable <- function (
+  createResultTable <- function (connection,
                            Agg_ID,
                            Agg_geom,
                            Agg_Area
                           )
- {resultTable <- dbGetQuery(connection, sprintf(
+ {dbGetQuery(connection, sprintf(
     
     "DROP TABLE IF EXISTS result;
     
@@ -158,7 +155,7 @@ return(VDist)
     Agg_geom, Agg_geom      ## WHERE       -- geometrie columns of Agg_Area
     ))  
   
-  return(resultTable)
+
  
  }
  
@@ -175,10 +172,10 @@ return(VDist)
 ##
 
   
-  updateTable <- function (
+  updateTable <- function (connection,
                       VDist
                           ) 
-  {UpdateLength <- dbGetQuery(connection, sprintf( 
+  {dbGetQuery(connection, sprintf( 
       
       "ALTER TABLE result DROP COLUMN IF EXISTS sum_%s;
       ALTER TABLE result ADD COLUMN sum_%s FLOAT;
@@ -210,7 +207,7 @@ return(VDist)
 ## inserting the total length into Table results
 ## calc the total length of selected line types
 
-  sumLength <- function (
+  sumLength <- function (connection,
                           VDist
                                 )
   {sumLength <- dbGetQuery(connection, sprintf(
@@ -228,7 +225,7 @@ return(VDist)
 ##########  FUNCTION  ##########  
 ## setting Function for line quantification
 
-ratioLines2Table <- function (
+ratioLines2Table <- function (connection,
                               VDist
                                     ) 
 {   calcRatios <- dbGetQuery(connection, sprintf( 
@@ -262,27 +259,28 @@ qntfyLines <- function (
                         )
 
 {
-intersectTable <- createInterSecTable(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
+intersectTable <- createInterSecTable(connection, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
-VDist <- getVDist()
+vDist <- getVDist(connection)
 
-VDistname <- gsub('\\.','_',VDist)
+vDistName <- gsub('\\.','_',vDist)
 
-resultTable <- createResultTable(Agg_ID, Agg_geom, Agg_Area)
+resultTable <- createResultTable(connection, Agg_ID, Agg_geom, Agg_Area)
 
-for (i in VDist) {updateTable(i)}
+
+for (i in VDist) {updateTable(connection, i)}
 
 
 addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE result DROP COLUMN IF EXISTS sum_length;
                                                   ALTER TABLE result ADD COLUMN sum_length FLOAT;"))
   
-for (i in VDistname) {sumLength(i)}
+for (i in vDistName) {sumLength(connection, i)}
 
-for (i in VDistname) {ratioLines2Table(i)}
+for (i in vDistName) {ratioLines2Table(connection,i)}
 
 }
 
-qntfyLines(con, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
+#qntfyLines(con, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
   
 
