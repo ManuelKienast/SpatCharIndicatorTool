@@ -19,12 +19,12 @@
 # library(rgdal)
 # library(RPostgreSQL)
 # 
-# #creates connection to the database 
-# con <- dbConnect(dbDriver("PostgreSQL"),
-#                  dbname = "DLR",
-#                  host = "localhost",
-#                  user = "postgres", 
-#                  password = "postgres")
+# # FOR PERSONAL USE
+# ## Creating the db connection
+# drv <- dbDriver("PostgreSQL")
+# con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
+# dbListTables(con)
+# 
 # 
 # #Lists all tables of chosen database
 # dbListTables(con)
@@ -34,25 +34,32 @@
 # y_cell      # Cellheighth in unit of chosen SRID
 # schema1     # Name of the Schema in which the reference layer table is located
 # table       # Reference layer for extent
+# geom        # geometry column of Reference layer
 # schema2     # Name of the Schema in which the Fishnet shall be created
 # name        # Name of output table
 
 
+## FOR Usage on URMO
+drv <- dbDriver("PostgreSQL")
+con <- dbConnect(drv, dbname = "urmo", host = "129.247.28.69", port= "5432", user = "urmo", password = "urmo") 
+dbListTables(con)
 
-fishnet <- function(con, x_cell, y_cell, schema1, table, schema2, name) {
+
+
+fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema2, name) {
   
-  tableS = paste(schema1, table, sep = ".")
+  tableS = paste(Agg_schema1, Agg_Area, sep = ".")
   nameS  = paste(schema2, name, sep = ".")
   
   clear = dbGetQuery(con, sprintf("DROP TABLE IF EXISTS %s;", nameS))  
   
-  get_SRID = dbGetQuery(con, sprintf("SELECT FIND_SRID('%s', '%s', 'geom');", schema1, table)) 
+  get_SRID = dbGetQuery(con, sprintf("SELECT FIND_SRID('%s', '%s', '%s');", Agg_schema1, Agg_Area, Agg_geom)) 
   
-  w_layer = dbGetQuery(con, sprintf("select ceil((st_xmax(st_extent(%s.geom)) - 
-                                   st_xmin(st_extent(%s.geom)))/%s)  FROM %s;", tableS, tableS, x_cell, tableS))
+  w_layer = dbGetQuery(con, sprintf("select ceil((st_xmax(st_extent(%s.%s)) - 
+                                   st_xmin(st_extent(%s.%s)))/%s)  FROM %s;", tableS, Agg_geom, tableS, Agg_geom, x_cell, tableS))
   
-  h_layer = dbGetQuery(con, sprintf("select  ceil((st_ymax(st_extent(%s.geom)) - 
-                                   st_ymin(st_extent(%s.geom)))/%s) AS height_layer FROM %s;", tableS, tableS, y_cell, tableS))
+  h_layer = dbGetQuery(con, sprintf("select  ceil((st_ymax(st_extent(%s.%s)) - 
+                                   st_ymin(st_extent(%s.%s)))/%s) AS height_layer FROM %s;", tableS, Agg_geom, tableS, Agg_geom, y_cell, tableS))
   
   
   create_fish = dbGetQuery(con, sprintf("CREATE OR REPLACE FUNCTION ST_CreateFishnet(
@@ -74,16 +81,23 @@ fishnet <- function(con, x_cell, y_cell, schema1, table, schema2, name) {
                                         CREATE TABLE %s AS
                                         SELECT *
                                         FROM ST_CreateFishnet(%s, %s, %s, %s, 
-                                        (SELECT ST_xmin(St_extent(geom)) FROM %s),
-                                        (SELECT ST_ymin(St_extent(geom)) FROM %s)) AS cells;
+                                        (SELECT ST_xmin(St_extent(%s)) FROM %s),
+                                        (SELECT ST_ymin(St_extent(%s)) FROM %s)) AS cells;
 
                                         ALTER TABLE %s
                                         ADD COLUMN gid serial PRIMARY KEY;
 
                                         ALTER TABLE %s
                                         ALTER COLUMN geom TYPE geometry(Polygon, %s)
-                                        USING ST_SetSRID(geom, %s);"
-                                        , nameS, h_layer, w_layer, x_cell, y_cell, tableS, tableS, nameS, nameS, get_SRID, get_SRID
+                                        USING ST_SetSRID(%s, %s);"
+                                        , nameS,
+                                        h_layer, w_layer, x_cell, y_cell,
+                                        Agg_geom, tableS,
+                                        Agg_geom, tableS,
+                                        nameS,
+                                        nameS,
+                                        get_SRID,
+                                        Agg_geom, get_SRID
                                         
                                         
   ))
@@ -91,13 +105,13 @@ fishnet <- function(con, x_cell, y_cell, schema1, table, schema2, name) {
 }
 
 
-
+fishnet(con, 500, 500, "urmo", "plr", "the_geom", "grids", "Fish_500")
 
 #----------------------------------------------------------------------------------------------------------------------
 
 #Usage:
 
-# fishnet(con, 2000, 2000, "public", "tvz", "public", "fishnet")
+# fishnet(con, 2000, 2000, "public", "tvz", "geom", "public", "fishnet")
 # 
 # 
 # 
