@@ -6,21 +6,21 @@
 
 
 
-# FOR PERSONAL USE
-## Creating the db connection
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
-dbListTables(con)
+# # FOR PERSONAL USE
+# ## Creating the db connection
+# drv <- dbDriver("PostgreSQL")
+# connection <- dbConnect(drv, dbname = "DLR", host = "localhost", port= "5432", user = "postgres", password = "postgres")
+# dbListTables(connection)
 
 
-## Defintion of Variables:
-connection = con
-Agg_Area ="planungsraum_mitte"
-Agg_ID = "schluessel"
-Agg_geom = "geom"
-Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
-Ex_Obj = "strklasse"
-Ex_geom = "geom"
+# ## Defintion of Variables:
+# connection = con
+# Agg_Area ="planungsraum_mitte"
+# Agg_ID = "schluessel"
+# Agg_geom = "geom"
+# Ex_Area = "strassennetzb_rbs_od_blk_2015_mitte"
+# Ex_Obj = "strklasse"
+# Ex_geom = "geom"
 
 #setwd("d:\\Manuel\\git\\Urmo-SpatCharIndicatorTool")
 library(RPostgreSQL)
@@ -28,26 +28,8 @@ library(rgdal)
 library(RODBC)
 
 
-## FOR USAGE ON URMO
-## Creating the db connection
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "urmo", host = "129.247.28.69", port= "5432", user = "urmo", password = "urmo") 
-dbListTables(con)
 
 
-## Defintion of Variables:
-connection = con
-Agg_Area ="urmo.plr"
-Agg_ID = "plr_id"
-Agg_geom = "the_geom"
-Ex_Area = "osm.berlin_network"
-Ex_Obj = "cycleway"
-Ex_geom = "shape"
-
-
-
-
-##
 ## setting helper functions
 ##
 ##########  FUNCTION  ##########  
@@ -57,7 +39,7 @@ Ex_geom = "shape"
 ##
   
 createInterSecTable <- function (
-    
+    connection,
     Agg_Area,
     Agg_ID,
     Agg_geom,
@@ -82,7 +64,7 @@ createInterSecTable <- function (
             %s AS Agg_Area
             LEFT JOIN %s AS Ex_Area
               ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-                WHERE Ex_Area.%s LIKE '%s' AND Ex_Area.%s NOT LIKE '%s' AND
+                WHERE Ex_Area.osm_type LIKE '%s' AND Ex_Area.%s NOT LIKE '%s' AND
                 ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
                 
       ) as foo
@@ -98,34 +80,23 @@ createInterSecTable <- function (
       Agg_Area,                     ## FROM       -- table containing the Aggreation Area geometries 
       Ex_Area,                      ## LEFT JOIN  -- table containing the Examination Object  geometries and information here: lineTypes
       Agg_geom, Ex_geom,            ## ON         -- geometrie columns of both Agg and Ex objects
-      Ex_Obj, "highway%", Ex_Obj, "track;%",   ## WHERE      -- type of Line and query for highway in its description --> its an OSM-special
-      Agg_geom, Ex_geom,     ## WHERE      -- geometrie columns of both Agg and Ex objects
-      Agg_geom, Ex_geom      ## WHERE      -- geometrie columns of both Agg and Ex objects
+      "highway%", Ex_Obj, "track;%",   ## WHERE      -- type of Line and query for highway in its description --> its an OSM-special
+      Agg_geom, Ex_geom     ## WHERE      -- geometrie columns of both Agg and Ex objects
+
     ))
     
     return(intersectTable)
+    
+    
   }
   
+
+
 
 #qntfyLines(con, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 #
 #
 
-##########  FUNCTION  ##########
-## getting the vector of dictinct variables from Agg_Area table
-## reminder: switch WHERE linetype to 'highway%' for OSM data, otherwise no WHERE is needed
-
-getVDist <- function ()
-{VDistdf <- dbGetQuery(connection, sprintf(
-  "SELECT DISTINCT linetype 
-  FROM Intersec
-  
-  ;"))
-
-VDist <- VDistdf[,1]
-
-return(VDist)    
-}
 
 
 ##########  FUNCTION  ##########  
@@ -133,6 +104,7 @@ return(VDist)
 ## create result table with Agg_Area_Id and its geom to select other results into
   
   createResultTable <- function (
+                           connection,
                            Agg_ID,
                            Agg_geom,
                            Agg_Area
@@ -163,7 +135,25 @@ return(VDist)
  }
  
 
+##########  FUNCTION  ##########
+## getting the vector of dictinct variables from Agg_Area table
+## reminder: switch WHERE linetype to 'highway%' for OSM data, otherwise no WHERE is needed
 
+getVDist <- function (connection)
+
+  {VDistdf <- dbGetQuery(connection, sprintf(
+    
+    "SELECT DISTINCT cycleway 
+    FROM osm.berlin_network
+    WHERE cycleway NOT LIKE '%s' AND cycleway != 'none'
+    ;"
+    ,
+    "track\\;%"))
+  
+VDist <- VDistdf[,1]
+
+return(VDist)    
+}
 
 
 ##########  FUNCTION  ##########
@@ -176,6 +166,7 @@ return(VDist)
 
   
   updateTable <- function (
+                      connection,
                       VDist
                           ) 
   {UpdateLength <- dbGetQuery(connection, sprintf( 
@@ -194,6 +185,7 @@ return(VDist)
                 ORDER BY Agg_ID
             ) as foo
       WHERE result.Agg_ID = foo.Agg_ID
+      
       ;"
       ,
       gsub('\\.','_',VDist) ,         ## DROP COl     -- vector containing distinct values
@@ -211,12 +203,14 @@ return(VDist)
 ## calc the total length of selected line types
 
   sumLength <- function (
+                          connection,
                           VDist
                                 )
   {sumLength <- dbGetQuery(connection, sprintf(
     
     "UPDATE result
     SET sum_length = COALESCE(sum_length,0)+COALESCE(sum_%s,0)  -- summation of all values listed in the V(Dist)
+    
     ;"
     ,
     VDist
@@ -229,6 +223,7 @@ return(VDist)
 ## setting Function for line quantification
 
 ratioLines2Table <- function (
+                              connection,
                               VDist
                                     ) 
 {   calcRatios <- dbGetQuery(connection, sprintf( 
@@ -251,7 +246,7 @@ ratioLines2Table <- function (
 ##########  FUNCTION  ##########  
 ## the complete Function
 
-qntfyLines <- function (
+qntfyLinesBike <- function (
                         connection,
                         Agg_Area,
                         Agg_ID,
@@ -262,29 +257,42 @@ qntfyLines <- function (
                         )
 
 {
-intersectTable <- createInterSecTable(Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
+intersectTable <- createInterSecTable(connection, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
-VDist <- getVDist()
+
+resultTable <- createResultTable(connection, Agg_ID, Agg_geom, Agg_Area)
+
+
+VDist <- getVDist(connection)
 
 VDistname <- gsub('\\.','_',VDist)
 
-resultTable <- createResultTable(Agg_ID, Agg_geom, Agg_Area)
 
-for (i in VDist) {updateTable(i)}
+for (i in VDist) {updateTable(connection, i)}
 
 
 addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE result DROP COLUMN IF EXISTS sum_length;
                                                   ALTER TABLE result ADD COLUMN sum_length FLOAT;"))
   
-for (i in VDistname) {sumLength(i)}
+for (i in VDistname) {sumLength(connection, i)}
 
-for (i in VDistname) {ratioLines2Table(i)}
+for (i in VDistname) {ratioLines2Table(connection, i)}
 
 }
 
-qntfyLines(con, Agg_Area, Agg_ID, Agg_geom, Ex_Area, Ex_Obj, Ex_geom)
 
-  
+#qntfyLinesBike(connection = connection, Agg_Area = "urmo.plr", Agg_ID = "plr_id", Agg_geom = "the_geom", Ex_Area = "osm.berlin_network",
+#           Ex_Obj = "cycleway", Ex_geom = "shape")
+
+# 
+# ## Defintion of Variables:
+
+# Agg_Area ="urmo.plr"
+# Agg_ID = "plr_id"
+# Agg_geom = "the_geom"
+# Ex_Area = "osm.berlin_network"
+# Ex_Obj = "cycleway"
+# Ex_geom = "shape"
 
 
 ##########  FUNCTION  ##########  
@@ -316,7 +324,10 @@ closeOpenPSQLConnections()
 # 
 # lapply(VectorDist, function(x) paste(x,2))
 # 
-# 
+# ?read.delim()
+# ?cbind()
+# ?dim
+# ?na.rm
 # 
 # ########################################################################################################
 # ########################################################################################################
