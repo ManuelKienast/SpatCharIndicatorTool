@@ -259,6 +259,7 @@ ratioLines2Table <- function (
 
 qntfyLinesBike <- function (
                         connection,
+                        result_table_name,
                         Agg_Area,
                         Agg_ID,
                         Agg_geom,

@@ -1,4 +1,5 @@
 source("indicator\\qntfyLines.R")
+source("indicator\\qntfyLinesBike.R")
 
 con <- dbConnect(dbDriver("PostgreSQL"),
                  host = "localhost",
@@ -7,5 +8,15 @@ con <- dbConnect(dbDriver("PostgreSQL"),
                  password = "postgres",
                  dbname = "urmo")
 
-qntfyLines(con,"public.hex_8000_osm_ind", "grid.hex_8000", "gid" , "the_geom", "osm.berlin_network", "osm_type", "shape")
 
+
+grids <- c(500, 1000, 2000, 4000, 8000)
+
+#for(grid_size in grids){
+#  qntfyLines(con,sprintf("public.hex_%s_osm_ind", grid_size), sprintf("grid.hex_%s",grid_size), "gid" , "the_geom", "osm.berlin_network", "osm_type", "shape")
+#}
+
+
+for(grid_size in grids){
+  qntfyLinesBike(con, sprintf("public.hex_%s_osm_ind", grid_size), sprintf("grid.hex_%s",grid_size), "gid" , "the_geom", "osm.berlin_network", "osm_type", "shape")
+}

@@ -247,7 +247,7 @@ qntfyLines <- function (
                         )
 
   {
-  #intersectTable <- createInterSecTable(connection, Agg_Area, id_column, Agg_geom, Ex_Area, label_column, Ex_geom)
+  createInterSecTable(connection, Agg_Area, id_column, Agg_geom, Ex_Area, label_column, Ex_geom)
 
   vDist <- getVDist(connection)
 
