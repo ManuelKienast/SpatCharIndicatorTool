@@ -11,6 +11,6 @@ Hexgrid and fishgrid generation
 
 calculation of line, point and area density,
 calculation of entropy
-calculation of ratios
+ and the calculation of ratios
 
 
