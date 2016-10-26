@@ -3,20 +3,9 @@
 ## secondly calculation of ratio of line Type against all selected line Types
 ##
 ## Option for selection of which line types to calc or to choose ALL the lines
-
-
-
-
-
 library(RPostgreSQL)
 library(rgdal)
 library(RODBC)
-
-
-
-
-
-
 ##
 ## setting helper functions
 ##
@@ -132,13 +121,7 @@ createResultTable <- function (connection,
   result_table_name## WHERE       -- geometry columns of Agg_Area
 ))  
   
-  
-  
 }
-
-
-
-
 
 ##########  FUNCTION  ##########
 ## updating a table (create and fill columns)
@@ -205,7 +188,6 @@ sumLength <- function (connection,
 }
 
 
-
 ##########  FUNCTION  ##########  
 ## setting Function for line quantification
 
@@ -229,7 +211,6 @@ ratioLines2Table <- function (connection,
   vDist, vDist   ## SET          -- vector containing distinct values
 ))
 }
-
 
 
 ##########  FUNCTION  ##########  
@@ -270,12 +251,5 @@ qntfyLinesBike <- function (
 
 ##qntfyLines <- function (connection,result_table_name,Agg_Area,id_column,Agg_geom, Ex_Area,label_column,Ex_geom)
  
-for bikes -->  
-qntfyLinesBike(connection = con, result_table_name = "result_bike", Agg_Area = "urmo.plr", id_column = "plr_id", Agg_geom = "the_geom", Ex_Area = "osm.berlin_network", label_column = "bikeusage", Ex_geom = "shape")
-
-
-
-
-
-
-# 
+#for bikes -->  
+#qntfyLinesBike(connection = con, result_table_name = "result_bike_hex_2000", Agg_Area = "grids.hex_2000", id_column = "gid", Agg_geom = "the_geom", Ex_Area = "osm.berlin_network", label_column = "bikeusage", Ex_geom = "shape")
