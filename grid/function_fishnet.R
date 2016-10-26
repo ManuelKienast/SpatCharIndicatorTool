@@ -39,10 +39,6 @@
 # name        # Name of output table
 
 
-## FOR Usage on URMO
-drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "urmo", host = "129.247.28.69", port= "5432", user = "urmo", password = "urmo") 
-dbListTables(con)
 
 
 
@@ -89,15 +85,16 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
 
                                         ALTER TABLE %s
                                         ALTER COLUMN geom TYPE geometry(Polygon, %s)
-                                        USING ST_SetSRID(%s, %s);"
-                                        , nameS,
+                                        USING ST_SetSRID(geom, %s);"
+                                        , 
+                                        nameS,
                                         h_layer, w_layer, x_cell, y_cell,
                                         Agg_geom, tableS,
                                         Agg_geom, tableS,
                                         nameS,
                                         nameS,
                                         get_SRID,
-                                        Agg_geom, get_SRID
+                                        get_SRID
                                         
                                         
   ))
@@ -105,7 +102,7 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
 }
 
 
-fishnet(con, 500, 500, "urmo", "plr", "the_geom", "grids", "Fish_500")
+#fishnet(con, 500, 500, "urmo", "plr", "the_geom", "grids", "Fish_500")
 
 #----------------------------------------------------------------------------------------------------------------------
 
