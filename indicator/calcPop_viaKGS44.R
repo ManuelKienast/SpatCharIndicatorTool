@@ -4,20 +4,7 @@
 ## disaggregating the Block-population onto the no of households, and then summing those households to Grid cell (ORDER BY gid [unique cell identifier])
 
 
-VARIABLES:
-  pop_blk <- "pop_blk"
-  ex_table1_schema <- "urmo"
-  ex_table2_schema <- "urmo"
-  result_table_name <- "result_bike_hex_2000"
-  blk_id <- "blk_id"
-  kgs44_id <- "kgs44_id"
-  kgs44 <- "kgs44"
-  ex_table2_col <- "hh"
-  ex_table1_geom <- "the_geom"
-  ex_table2_geom <- "the_geom"
-  agg_id  <- "agg_id"
-  agg_table1_geom <- "geom"
-  vektorColNames <- "pop_tot"
+
   
 ## 
 ## Helper Function, reading all column names which are LIKE pop% and emp% 
@@ -25,7 +12,7 @@ VARIABLES:
 ##
 
     
-getColNames <- function (con,  urmo, pop_blk)
+getColNames <- function (con, ex_table1_schema, ex_table1)
 {
   vektorColNamesdf <- dbGetQuery(con, sprintf( 
     
@@ -37,8 +24,8 @@ getColNames <- function (con,  urmo, pop_blk)
               OR column_name LIKE 'emp%s')
     ;"
     ,
-    urmo,
-    pop_blk,
+    ex_table1_schema,
+    ex_table1,
     "%",
     "%"
     ))
@@ -49,16 +36,13 @@ getColNames <- function (con,  urmo, pop_blk)
   
 }
 
-
-vektorColNames <- getColumnNames (con, urmo, pop_blk)
-
-
 ##
 ## UPDATE TABLE (created with qntfyLines() Function) and ADD COLUMNS  with the populations for each Cell of the chosen Aggregation Area
 ##
 
 updateTableWithColNames <- function (con, result_table_name, vektorColNames)
-{
+
+  {
   newColNames <- dbGetQuery(con, sprintf( 
     
     "ALTER TABLE %s DROP COLUMN IF EXISTS %s;
@@ -69,10 +53,8 @@ updateTableWithColNames <- function (con, result_table_name, vektorColNames)
     result_table_name, vektorColNames
     
   ))
+  return(newColNames)
 }
-
-updatedTable <- updateTableWithColNames (con, result_table_name, vektorColNames)
-
 
 ##
 ## WRITE the population Informatino into the Table updated with the new Col names
@@ -84,10 +66,10 @@ updatedTable <- updateTableWithColNames (con, result_table_name, vektorColNames)
 ## SELECT: SUM() of the population ordered by the agg_ID
 ##
 
-
-calcPop2Cell <- function(con, result_table_name, vektorColNames, blk_id, ex_table2_col, kgs44_id, ex_table1_schema, pop_blk,
-                         ex_table2_schema, kgs44, ex_table2_geom, ex_table1_geom, agg_id, agg_table1_geom)
-  
+insertPop2table <- function(con, vektorColNames,
+                            result_table_schema, result_table_name, agg_id, result_table_geom,
+                            ex_table1_schema, ex_table1, ex_table1_id, ex_table1_geom,
+                            ex_table2_schema, ex_table2, ex_table2_col,ex_table2_geom)
 {
   popPerCell <- dbGetQuery(con, sprintf( 
     
@@ -97,34 +79,34 @@ calcPop2Cell <- function(con, result_table_name, vektorColNames, blk_id, ex_tabl
 
 With hhPerBlk AS (
 	    SELECT
-        p.blk_id AS blk_id,
-        sum(hh) AS hhPerBlk
-          FROM urmo.kgs44 k
-            JOIN urmo.pop_blk p
-              ON ST_Within(k.the_geom, p.the_geom)
+        p.%s AS blk_id,
+        sum(%s) AS hhPerBlk
+          FROM %s.%s k
+            JOIN %s.%s p
+              ON ST_Within(k.%s, p.%s)
     GROUP by p.blk_id),
     
   popPerHh AS (
     SELECT 
-      p.pop_tot / h.hhPerBlk AS popPerHh,
-      p.blk_id AS blk_id
-        FROM urmo.pop_blk AS p
+      p.%s / h.hhPerBlk AS popPerHh,
+      p.%s AS blk_id
+        FROM %s.%s AS p
           LEFT JOIN hhPerBlk as h
             ON p.blk_id = h.blk_id
           WHERE h.hhPerBlk >0
-    GROUP BY p.blk_id, p.pop_tot, h.hhPerBlk)
+    GROUP BY p.blk_id, p.%s, h.hhPerBlk)
     
   SELECT 
-    sum(k.hh*popPerHh) as %s,
-    g.gid
-      FROM grids.hex_2000 g
-        JOIN urmo.kgs44 k
-          ON ST_Within(k.the_geom, g.the_geom)
-        LEFT JOIN urmo.pop_blk p 
-          ON ST_Within (k.the_geom, p.the_geom)
+    sum(k.%s*popPerHh) as %s,
+    g.%s
+      FROM %s.%s g
+        JOIN %s.%s k
+          ON ST_Within(k.%s, g.%s)
+        LEFT JOIN %s.%s p 
+          ON ST_Within (k.%s, p.%s)
         LEFT JOIN popPerHh as pop
-          ON p.blk_ID = pop.BLK_ID
-  GROUP BY g.gid
+          ON p.%s = pop.blk_id
+    GROUP BY g.%s
   ) as foo
   WHERE %s.%s = foo.%s
 
@@ -132,97 +114,85 @@ With hhPerBlk AS (
     ,
     result_table_name,                 ## UPDATE
     vektorColNames, vektorColNames,    ## SET 
-    blk_id,                            ## SELECT 1 p.
-    vektorColNames, ex_table2_col,     ## SELECT 2 p.    vektor - hh
-    kgs44_id,                          ## SELECT 3 k.
-    ex_table1_schema, pop_blk,         ## FROM p
-    ex_table2_schema, kgs44,           ## JOIN k
-    ex_table2_geom, ex_table1_geom,    ## ST_Within (points form kgs in area of population cell aka pop_blk)
-    ex_table2_col,                     ## WHERE -- hh
-    blk_id, vektorColNames, kgs44_id,  ## GROUP BY
-    vektorColNames,                    ## sum()
-    agg_id,                            ## SELECT s - grid
-    ex_table2_schema, kgs44,           ## FROM k
-    result_table_name,                 ## JOIN s
-    ex_table2_geom, agg_table1_geom,   ## ST_Within (points form kgs in area of result geom - grids)
-    kgs44_id, kgs44_id,                ## LEFT JOIN ON 
-    agg_id,                            ## Group BY
+    ex_table1_id,                      ## SELECT 1 p.
+    ex_table2_col,                     ## sum - hh
+    ex_table2_schema, ex_table2,       ## FROM k  kgs44
+    ex_table1_schema, ex_table1,       ## JOIN  p
+    ex_table2_geom, ex_table1_geom,    ## ST_Within (points from kgs in area of population cell aka pop_blk)
+    vektorColNames,                    ## SELECT 1 division
+    ex_table1_id,                      ## SELECT 1 p.
+    ex_table1_schema, ex_table1,       ## FROM  p
+    vektorColNames,                    ## GROUP BY
+    ex_table2_col, vektorColNames,     ## SELECT1 - hh, Colnames
+    agg_id,                            ## SELECT2 - g - grid
+    result_table_schema,result_table_name,  ## FROM g
+    ex_table2_schema, ex_table2,       ## JOIN k  kgs44
+    ex_table2_geom, result_table_geom, ## ON ST_Within -1- (points form kgs in area of result geom - grids)
+    ex_table1_schema, ex_table1,       ## LEFT JOIN p
+    ex_table2_geom, ex_table1_geom,    ## ON ST_Within -2- (points form kgs in area of population cell aka pop_blk)
+    ex_table1_id,                      ## ON -3- p.
+    agg_id,                            ## GROUP BY
     result_table_name, agg_id, agg_id  ## WHERE
     
   ))
+
+  return(popPerCell)
+  
 }
 
-
-insertPop2table <- calcPop2Cell(con, result_table_name, vektorColNames, blk_id, ex_table2_col, kgs44_id, ex_table1_schema, pop_blk,
-                                ex_table2_schema, kgs44, ex_table2_geom, ex_table1_geom, agg_id, agg_table1_geom)
-
-
-
-
-
-
-
-
-
-
-"
-  hhPerGrid AS                                     -- which Aggregation cell (GridCell) is each household located in?
-  (
-    SELECT 
-      s.%s,
-      k.%s,
-      k.%s
-        FROM %s.%s k 
-        JOIN %s s 
-          ON ST_Within(k.%s, s.%s)
-    GROUP BY s.%s, k.%s, k.%s
-    )
-
-    SELECT 
-      hh.%s,
-      sum(DISTINCT(pop.PopPerHh))	AS %s
-        FROM pop2hh AS pop
-        JOIN hhPerGrid AS hh
-          ON (pop.%s = hh.%s)
-    GROUP BY hh.%s
-    ORDER BY hh.%s
-    ) as foo
-    WHERE %s.%s = foo.%s
-    ;"
-    
-    ,
-    result_table_name,                 ## UPDATE
-    vektorColNames, vektorColNames,    ## SET 
-    blk_id,                            ## SELECT 1 p.
-    vektorColNames, ex_table2_col,     ## SELECT 2 p.    vektor - hh
-    kgs44_id,                          ## SELECT 3 k.
-    ex_table1_schema, pop_blk,         ## FROM p
-    ex_table2_schema, kgs44,           ## JOIN k
-    ex_table2_geom, ex_table1_geom,    ## ST_Within (points form kgs in area of population cell aka pop_blk)
-    ex_table2_col,                     ## WHERE -- hh
-    blk_id, vektorColNames, kgs44_id,  ## GROUP BY
-    agg_id,                            ## SELECT1  -- agg_id (grid)
-    kgs44_id,                          ## SELECT2  -- kgs44_id
-    ex_table2_col,                     ## SELECT3  -- hh - household count
-    ex_table2_schema, kgs44,           ## FROM k
-    result_table_name,                 ## JOIN s
-    ex_table2_geom, agg_table1_geom,   ## ST_Within (points form kgs in area of aggregation cell aka grid cell)
-    agg_id, kgs44_id, ex_table2_col,   ## GROUP BY   -- Grid_ID, kgs44(extable2)_id, hh (extable2col)
-    agg_id,                            ## SELECT1  -- agg_id (grid)
-    vektorColNames,                    ## SELECT1 AS ---
-    kgs44_id, kgs44_id,                ## ON  -- kgs44_id
-    agg_id,                            ## GROUP BY  -- agg_id (grid)
-    agg_id,                            ## ORDER BY  -- agg_id (grid)
-    result_table_name, agg_id, agg_id  ## WHERE 
-    
-  ))
-}
-
-insertPop2table <- calcPop2Cell(con, result_table_name, vektorColNames, blk_id, ex_table2_col, kgs44_id, ex_table1_schema, pop_blk,
-                                ex_table2_schema, kgs44, ex_table2_geom, ex_table1_geom, agg_id, agg_table1_geom)
-
-
 ##
-## FINAL Function, calling everything and writing the table
+## FINAL Function, calling everything and looping where appropriate
 ##
 
+calcPop2Cell <- function(con,
+                         result_table_schema, result_table_name, agg_id, result_table_geom,
+                         ex_table1_schema, ex_table1, ex_table1_id, ex_table1_geom,
+                         ex_table2_schema, ex_table2, ex_table2_col,ex_table2_geom
+                         )
+{
+  vektorColNames <- getColNames (con, ex_table1_schema, ex_table1)
+
+  for (i in vektorColNames) updateTableWithColNames(con, "result_bike_hex_2000", i)
+
+  for (i in vektorColNames) insertPop2table(con, i,
+                                  result_table_schema, result_table_name, agg_id, result_table_geom,
+                                  ex_table1_schema, ex_table1, ex_table1_id, ex_table1_geom,
+                                  ex_table2_schema, ex_table2, ex_table2_col, ex_table2_geom)
+  }
+
+# USAGE:
+# resutltable <- calcPop2Cell(con, 
+#                             "public", "result_bike_hex_2000", "agg_id", "geom",
+#                             "urmo", "pop_blk", "blk_id", "the_geom",
+#                             "urmo", "kgs44", "hh", "the_geom")
+
+#######################################################################################################
+####  Test Cases  ###################################################################################################
+#######################################################################################################
+
+# vektorColNames <- getColNames (con, "urmo", "pop_blk")
+# str(vektorColNames)
+# 
+# updatedTable <- updateTableWithColNames (con, "result_bike_hex_2000", "test21")
+# 
+# VARIABLES:
+#   
+# pop_blk <- "pop_blk"
+# ex_table1 <- "pop_blk"
+# ex_table1_schema <- "urmo"
+# ex_table2_schema <- "urmo"
+# result_table_name <- "result_bike_hex_2000"
+# result_table_schema <- "public"
+# ex_table1_id <- "blk_id"
+# blk_id <- "blk_id"
+# ex_table2_id <- "kgs44_id"
+# kgs44_id <- "kgs44_id"
+# ex_table2 <- "kgs44"
+# kgs44 <- "kgs44"
+# ex_table2_col <- "hh"
+# ex_table1_geom <- "the_geom"
+# ex_table2_geom <- "the_geom"
+# result_table_id <- "agg_id"
+# agg_id  <- "agg_id"
+# result_table_geom <- "geom"
+# vektorColNames <- "pop_tot"

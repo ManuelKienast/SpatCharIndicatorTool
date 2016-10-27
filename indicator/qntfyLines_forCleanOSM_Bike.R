@@ -253,3 +253,13 @@ qntfyLinesBike <- function (
  
 #for bikes -->  
 #qntfyLinesBike(connection = con, result_table_name = "result_bike_hex_2000", Agg_Area = "grids.hex_2000", id_column = "gid", Agg_geom = "the_geom", Ex_Area = "osm.berlin_network", label_column = "bikeusage", Ex_geom = "shape")
+
+
+# connection = con
+# result_table_name = "result_bike_hex_2000"
+# Agg_Area = "grids.hex_2000"
+# id_column = "gid"
+# Agg_geom = "the_geom"
+# Ex_Area = "osm.berlin_network"
+# label_column = "bikeusage"
+# Ex_geom = "shape"
