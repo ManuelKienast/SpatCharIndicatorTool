@@ -17,6 +17,7 @@ VARIABLES:
   ex_table2_geom <- "the_geom"
   agg_id  <- "agg_id"
   agg_table1_geom <- "geom"
+  vektorColNames <- "pop_tot"
   
 ## 
 ## Helper Function, reading all column names which are LIKE pop% and emp% 
@@ -92,21 +93,80 @@ calcPop2Cell <- function(con, result_table_name, vektorColNames, blk_id, ex_tabl
     
     "UPDATE %s 
       SET %s = foo.%s
-    FROM (
-      WITH pop2hh AS                                 -- which Berlin_block_pop is each household located in?
-    (
-      SELECT 	
-        p.%s, 
-        p.%s/sum(k.%s) As PopPerHh,
-        k.%s
-          FROM %s.%s p 
-            JOIN %s.%s k 
-            ON ST_Within(k.%s, p.%s)
-            WHERE k.%s > 0
-        GROUP BY p.%s, p.%s, k.%s
-     ),
+        FROM (
+
+With hhPerBlk AS (
+	    SELECT
+        p.blk_id AS blk_id,
+        sum(hh) AS hhPerBlk
+          FROM urmo.kgs44 k
+            JOIN urmo.pop_blk p
+              ON ST_Within(k.the_geom, p.the_geom)
+    GROUP by p.blk_id),
     
-    hhPerGrid AS                                     -- which Aggregation cell (GridCell) is each household located in?
+  popPerHh AS (
+    SELECT 
+      p.pop_tot / h.hhPerBlk AS popPerHh,
+      p.blk_id AS blk_id
+        FROM urmo.pop_blk AS p
+          LEFT JOIN hhPerBlk as h
+            ON p.blk_id = h.blk_id
+          WHERE h.hhPerBlk >0
+    GROUP BY p.blk_id, p.pop_tot, h.hhPerBlk)
+    
+  SELECT 
+    sum(k.hh*popPerHh) as %s,
+    g.gid
+      FROM grids.hex_2000 g
+        JOIN urmo.kgs44 k
+          ON ST_Within(k.the_geom, g.the_geom)
+        LEFT JOIN urmo.pop_blk p 
+          ON ST_Within (k.the_geom, p.the_geom)
+        LEFT JOIN popPerHh as pop
+          ON p.blk_ID = pop.BLK_ID
+  GROUP BY g.gid
+  ) as foo
+  WHERE %s.%s = foo.%s
+
+    ;"
+    ,
+    result_table_name,                 ## UPDATE
+    vektorColNames, vektorColNames,    ## SET 
+    blk_id,                            ## SELECT 1 p.
+    vektorColNames, ex_table2_col,     ## SELECT 2 p.    vektor - hh
+    kgs44_id,                          ## SELECT 3 k.
+    ex_table1_schema, pop_blk,         ## FROM p
+    ex_table2_schema, kgs44,           ## JOIN k
+    ex_table2_geom, ex_table1_geom,    ## ST_Within (points form kgs in area of population cell aka pop_blk)
+    ex_table2_col,                     ## WHERE -- hh
+    blk_id, vektorColNames, kgs44_id,  ## GROUP BY
+    vektorColNames,                    ## sum()
+    agg_id,                            ## SELECT s - grid
+    ex_table2_schema, kgs44,           ## FROM k
+    result_table_name,                 ## JOIN s
+    ex_table2_geom, agg_table1_geom,   ## ST_Within (points form kgs in area of result geom - grids)
+    kgs44_id, kgs44_id,                ## LEFT JOIN ON 
+    agg_id,                            ## Group BY
+    result_table_name, agg_id, agg_id  ## WHERE
+    
+  ))
+}
+
+
+insertPop2table <- calcPop2Cell(con, result_table_name, vektorColNames, blk_id, ex_table2_col, kgs44_id, ex_table1_schema, pop_blk,
+                                ex_table2_schema, kgs44, ex_table2_geom, ex_table1_geom, agg_id, agg_table1_geom)
+
+
+
+
+
+
+
+
+
+
+"
+  hhPerGrid AS                                     -- which Aggregation cell (GridCell) is each household located in?
   (
     SELECT 
       s.%s,
@@ -120,7 +180,7 @@ calcPop2Cell <- function(con, result_table_name, vektorColNames, blk_id, ex_tabl
 
     SELECT 
       hh.%s,
-      sum(pop.PopPerHh)	AS %s
+      sum(DISTINCT(pop.PopPerHh))	AS %s
         FROM pop2hh AS pop
         JOIN hhPerGrid AS hh
           ON (pop.%s = hh.%s)

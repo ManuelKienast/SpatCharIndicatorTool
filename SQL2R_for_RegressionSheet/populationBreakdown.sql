@@ -1,26 +1,36 @@
-WITH pop_hh AS      -- which plr is each household located in?
-(
-  SELECT 	p.blk_id, 
-  p.pop_tot/sum(k.hh) As PopPerHh,
-  k.kgs44_id
-  FROM urmo.pop_blk p 
-  JOIN urmo.kgs44 k ON ST_Within(k.the_geom, p.the_geom)
-  WHERE k.hh > 0
-  GROUP BY p.blk_id, p.pop_tot, k.kgs44_id
-),
+--------------
+---- Query for reaggregation of population from blocks to gridcells
+--------------
 
-hh_Grid AS             -- which Aggregation cell (GridCell) is each household located in?
-(
-  SELECT s.gid, k.kgs44_id, k.hh
-  FROM urmo.kgs44 k 
-  JOIN grids.hex_2000 s ON ST_Within(k.the_geom, s.the_geom)
-  GROUP BY s.gid, k.kgs44_id, k.hh
-)
+With hhPerBlk AS (
+	SELECT
+		p.blk_id,
+		sum(hh) AS hhPerBlk
+	FROM urmo.kgs44 k
+		JOIN urmo.pop_blk p
+			ON ST_Within(k.the_geom, p.the_geom)
+	GROUP by p.blk_id
+	),
+
+popPerHh AS (
+	SELECT 
+		p.pop_tot / h.hhPerBlk AS popPerHh,
+		p.blk_id AS BLK_ID
+		FROM urmo.pop_blk AS p
+		LEFT JOIN hhPerBlk as h
+		ON p.blk_id = h.blk_id
+		WHERE h.hhPerBlk >0
+		GROUP BY p.blk_id, p.pop_tot, h.hhPerBlk)
+
 SELECT 
-hh_G.gid,
-sum(pop.PopPerHh)	
-FROM pop_hh AS pop
-join hh_Grid AS hh_G
-ON (pop.kgs44_id = hh_G.kgs44_id)
-GROUP BY hh_G.gid
-ORDER BY hh_G.gid
+	sum(k.hh*popPerHh) as res,
+	g.gid
+	FROM grids.hex_2000 g
+		JOIN urmo.kgs44 k
+			ON ST_Within(k.the_geom, g.the_geom)
+		LEFT JOIN urmo.pop_blk p 
+			ON ST_Within (k.the_geom, p.the_geom)
+		LEFT JOIN popPerHh as pop
+			ON p.blk_ID = pop.BLK_ID
+	GROUP BY g.gid
+	ORDER BY sum(k.hh*popPerHh) DESC
