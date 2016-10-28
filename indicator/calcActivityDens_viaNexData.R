@@ -15,7 +15,6 @@ pos_table <- "pos"
 result_table_schema <- "public"
 result_table_name <- "result_bike_hex_2000"
 pos_table_geom <- "the_geom"
-res_table_geom <- "geom"
 wz_table_schema <- "urmo"
 wz_table <- "wz"
 wz_table_id <- "wz_id"
@@ -37,27 +36,27 @@ pos_table_wzid <- "wz_id"
 
 ### create Vektor with ColNames
 
-vColNames <- c("shop_dens", "shop_dens_pop", "daily_dens", "daily_dens_pop", "rest_dens", "rest_dens_pop",
+vectorColNames <- c("shop_dens", "shop_dens_pop", "daily_dens", "daily_dens_pop", "rest_dens", "rest_dens_pop",
                "school_dens", "school_dens_pop", "health_dens", "health_dens_pop", "fun_dens", "fun_dens_pop",
                "employees")
 
-vWhereClauses <- c(sprintf("w.wz_abt = '47'"),
-                   sprintf("w.wz_abt = '47'"),
-                   sprintf("w.wz_kla IN('47.11','47.81') OR w.wz_gru ='47.2'"),
-                   sprintf("w.wz_kla IN('47.11','47.81') OR w.wz_gru ='47.2'"),
-                   sprintf("w.wz_abt = '56'"),
-                   sprintf("w.wz_abt = '56'"),
-                   sprintf("w.wz_gru IN('85.1','85.2','85.3','85.4')"),
-                   sprintf("w.wz_gru IN('85.1','85.2','85.3','85.4')"), 
-                   sprintf("w.wz_abt = '86' OR w.wz_kla IN('47.73','47.74')"),
-                   sprintf("w.wz_abt = '86' OR w.wz_kla IN('47.73','47.74')"),
-                   sprintf("w.wz_abt IN ('90','91','92','93')"),
-                   sprintf("w.wz_abt IN ('90','91','92','93')"),
-                   sprintf("")
+vWhereClauses <- c(sprintf("wz_abt = '47'"),
+                   sprintf("wz_abt = '47'"),
+                   sprintf("wz_kla IN('47.11','47.81') OR wz_gru ='47.2'"),
+                   sprintf("wz_kla IN('47.11','47.81') OR wz_gru ='47.2'"),
+                   sprintf("wz_abt = '56'"),
+                   sprintf("wz_abt = '56'"),
+                   sprintf("wz_gru IN('85.1','85.2','85.3','85.4')"),
+                   sprintf("wz_gru IN('85.1','85.2','85.3','85.4')"), 
+                   sprintf("wz_abt = '86' OR wz_kla IN('47.73','47.74')"),
+                   sprintf("wz_abt = '86' OR wz_kla IN('47.73','47.74')"),
+                   sprintf("wz_abt IN ('90','91','92','93')"),
+                   sprintf("wz_abt IN ('90','91','92','93')"),
+                   sprintf("1=1")
                    )
-
-
-
+# # #### TEST CASES
+# vectorColNames <- c("shop_dens", "shop_dens_pop")
+# vWhereClauses <- c(sprintf("wz_abt = '47'"), sprintf("wz_abt = '47'"))
 
 
 ### Write Temporary Intersec table storing data for computation speed up
@@ -80,7 +79,7 @@ createTempISTable <- function (
     row_number() over (order by 1) as key,
     p.%s AS pos_id,
     r.%s AS agg_id,
-    St_Area(r.%s) AS area,
+    St_Area(r.%s)/1000000 AS area_km2,
     p.%s AS employees,
     w.%s AS wz_abt,
     w.%s AS wz_kla,
@@ -122,17 +121,17 @@ createTempISTable <- function (
 ##
 ### Write Cols into result table with the names from vColNames
 ##
-updateResultTable <- function(con, vColNames, result_table_name)
+updateResultTable <- function(con, vectorColNames, result_table_name)
 
   {
   newColNames <- dbGetQuery(con, sprintf( 
     
-    "ALTER TABLE %s DROP COLUMN IF EXISTS %s_dens;
-    ALTER TABLE %s ADD COLUMN %s_dens FLOAT;
+    "ALTER TABLE %s DROP COLUMN IF EXISTS %s;
+    ALTER TABLE %s ADD COLUMN %s FLOAT;
     "
     ,
-    result_table_name, vektorColNames,
-    result_table_name, vektorColNames
+    result_table_name, vectorColNames,
+    result_table_name, vectorColNames
     ))
   return(newColNames)
 }
@@ -145,7 +144,7 @@ updateResultTable <- function(con, vColNames, result_table_name)
 ##
 
 updateTable <- function (connection,
-                         vektorColNames, vWhereClauses,
+                         vectorColNames, vWhereClauses,
                          result_table_schema, result_table_name, result_table_id, result_table_popTotCol
                          ) 
 {
@@ -154,54 +153,62 @@ updateTable <- function (connection,
   "UPDATE %s 
   SET %s = foo.%s
   FROM (
-    With %s AS 
-    (
-    SELECT 
+    With %s AS(
+    
+  SELECT 
       isT.%s AS agg_id,
         CASE 
-          WHEN %s != 'employees'
-            COUNT (isT.pos_id) AS vColNames
+          WHEN '%s' != 'employees'
+            THEN COUNT(isT.pos_id) 
           ELSE 
-            SUM(isT.employees) shops AS vColNames
-        END
-          FROM public.tempISTable AS isT
+            SUM(isT.employees)
+        END AS %s
+          FROM public.tempIS AS isT
+          
           WHERE %s 
     GROUP BY agg_id
     ORDER BY agg_id)
   
   SELECT 
-      CASE
-        WHEN %s LIKE ('%_pop')
-          t.%s / (r.%s / 1000) AS %s
-        WHEN %s = 'employees'
-          t.% AS %s
+    r.%s AS agg_id,  
+    CASE
+        WHEN '%s' LIKE '%s'
+          THEN t.%s / (r.%s / 1000) 
+        WHEN '%s' = 'employees'
+          THEN t.%s
         ELSE
-          t.% / tis.area AS %s
-    FROM %S.%s AS r
-      LEFT JOIN public.%s AS t
+          t.%s/tis.area_km2
+        END AS %s
+    FROM %s.%s AS r
+      LEFT JOIN %s AS t
         ON r.agg_id = t.agg_id
       LEFT JOIN public.tempis AS tis
         ON r.agg_id = tis.agg_id
+     WHERE t.%s > 0
   )as foo
    WHERE %s.%s = foo.agg_id
   ;"
   ,
   result_table_name,                 ## UPDATE  
-  vektorColNames, vektorColNames,    ## SET
-  vektorColNames,                    ## with table name
-  result_table_name,                 ## UPDATE
-  vektorColNames, vektorColNames,    ## SET 
-  result_table_id,                   ## SELECT -1-  agg_id
-  vektorColNames,                    ## CASE WHEN 
+  vectorColNames, vectorColNames,    ## SET
+  vectorColNames,                    ## with table name
+  
+  result_table_id,                   ## SELECT isT.%
+  vectorColNames,                    ## CASE WHEN
+  vectorColNames,                    ## END
   vWhereClauses,                     ## WHERE
-  vektorColNames,                    ## CASE WHEN -1-
-  vektorColNames, result_table_popTotCol, vektorColNames,    ## t.%s, pop_tot, vcolNames
-  vektorColNames,                    ## CASE WHEN -2-
-  vektorColNames, vektorColNames,    ## t% As %
-  vektorColNames, vektorColNames,    ## CASE ELSE -3-
+  
+  result_table_id,                   ## SELECT r.%
+  vectorColNames, "%_pop",           ## CASE WHEN -1-
+  vectorColNames, result_table_popTotCol,     ## t.%s, pop_tot, vcolNames
+  vectorColNames,                    ## CASE WHEN -2-
+  vectorColNames,                    ## t% As %
+  vectorColNames,                    ## CASE ELSE -3-
+  vectorColNames,                    ## END                    
   result_table_schema, result_table_name,  ## FROM r
-  vektorColNames,                    ## LEFT JOIN -1-
-  result_table_name, result_table_id, result_table_id  ## WHERE
+  vectorColNames,                    ## LEFT JOIN -1-
+  vectorColNames,                    ## WHERE > 0
+  result_table_name, result_table_id ## WHERE
   ))
 
   return(updatedResultTable)
@@ -213,27 +220,72 @@ updateTable <- function (connection,
 ##
 
 
-calcActivityDens2ResultTable <- function (con, vColNames, vWhereClauses,
-                                          result_table_schema, result_table_name, result_table_id, result_table_geom,
+calcActivityDens2ResultTable <- function (con, vectorColNames, vWhereClauses,
+                                          result_table_schema, result_table_name, result_table_id, result_table_popTotCol, result_table_geom,
                                           pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
                                           wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru)
-{  tempISTable <- createTempISTable (
-    con,
-    result_table_schema, result_table_name, result_table_id, result_table_geom,
-    pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
-    wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru) 
+{
+  
+tempISTable <- createTempISTable (
+                                    con,
+                                    result_table_schema, result_table_name, result_table_id, result_table_geom,
+                                    pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
+                                    wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru) 
   
   
-  updateResultTable <- function(con, vColNames, result_table_name)
+for (i in vectorColNames){ updateResultTable (con, i, result_table_name)}
     
+
+
+for ( i in seq_along(vectorColNames)) {updateTable(
+                                                    con, vectorColNames[i], vWhereClauses[i],
+                                                    result_table_schema, result_table_name, result_table_id, result_table_popTotCol)}
+
+#mapply(updateTable(con, vectorColNames, vWhereClauses, result_table_schema, result_table_name, result_table_id, result_table_popTotCol), vectorColNames, vWhereClauses )
     
-  updatedTable <- function (connection,
-                              vektorColNames, vWhereClauses,
-                              result_table_schema, result_table_name, result_table_id, result_table_popTotCol)
-    
+# for (i in vectorColNames){ 
+#   for (j in vWhereClauses){  
+#     updateTable ( con, i, j, 
+#                   result_table_schema, result_table_name, result_table_id, result_table_popTotCol)
+#    }
+#   }
 }
 
 
-### USAGE:
+calcActivityDens2ResultTable (con, vectorColNames, vWhereClauses,
+                              "public", "result_bike_hex_2000", "agg_id", "pop_tot", "geom",
+                              "urmo", "pos", "gid", "employee", "wz_id", "the_geom",
+                              "urmo", "wz", "wz_id", "wz_abt", "wz_kla", "wz_gru")
 
-#calcA
+
+
+#str(length(vectorColNames))
+#test <- seq_along(vectorColNames)
+############################################################################################### 
+#######  Variables for testing  ########################################################################################
+###############################################################################################
+### INPUT ORDER USAGE:
+# con, vColNames, vWhereClauses,
+# result_table_schema, result_table_name, result_table_id, result_table_popTotCol, result_table_geom,
+# pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
+# wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru)
+##
+### VARIABLES ORDER USAGE:
+##
+# con, vColNames, vWhereClauses,
+# result_table_schema <- "public", result_table_name <- "result_bike_hex_2000", result_table_id <- "agg_id", result_table_popTotCol <- "pop_tot", result_table_geom <- "geom",
+# pos_table_schema <- "urmo", pos_table <- "pos", pos_table_id <- "gid", pos_table_empCol <- "employee" pos_table_wzid <- "wz_id", pos_table_geom <- "the_geom",
+# wz_table_schema <- "urmo", wz_table <- "wz", wz_table_id <- "wz_id", wz_table_colAbt <- "wz_abt", wz_table_colKla <- "wz_kla", wz_table_colGru <- "wz_gru"
+##
+##USAGE:
+##
+# con, vColNames, vWhereClauses,
+# "public", "result_bike_hex_2000", "agg_id", "pop_tot" "geom",
+# "urmo", "pos", "gid", "employee" "wz_id", "the_geom",
+# "urmo", "wz", "wz_id", "wz_abt", "wz_kla", "wz_gru"
+
+
+
+
+
+
