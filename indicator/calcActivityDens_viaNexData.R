@@ -1,3 +1,33 @@
+
+############################################################################################### 
+#######  Variables for testing  ########################################################################################
+###############################################################################################
+
+result_table_id <- "agg_id"
+pos_table_id <- "gid"
+result_table_geom <- "geom"
+pos_table_empCol <- "employee"
+wz_table_colAbt <- "wz_abt"
+wz_table_colKla <- "wz_kla"
+wz_table_colGru <- "wz_gru"
+pos_table_schema <- "urmo"
+pos_table <- "pos"
+result_table_schema <- "public"
+result_table_name <- "result_bike_hex_2000"
+pos_table_geom <- "the_geom"
+res_table_geom <- "geom"
+wz_table_schema <- "urmo"
+wz_table <- "wz"
+wz_table_id <- "wz_id"
+pos_table_wzid <- "wz_id"
+
+###############################################################################################
+###############################################################################################
+
+
+
+
+
 # Calcs from SQL-Script: "calculate_activity_density_per_plr_from_pos.sql"
 # calculate density of various acitivities per PLR from POS data
 # including aggregation from POS locations to PLR
@@ -7,184 +37,203 @@
 
 ### create Vektor with ColNames
 
-vColNames <- c(shop_dens, shop_dens_pop, daily_dens, daily_dens_pop, rest_dens, rest_dens_pop, 
-               school_dens, school_dens_pop, health_dens, health_dens_pop, fun_dens, fun_dens_pop)
+vColNames <- c("shop_dens", "shop_dens_pop", "daily_dens", "daily_dens_pop", "rest_dens", "rest_dens_pop",
+               "school_dens", "school_dens_pop", "health_dens", "health_dens_pop", "fun_dens", "fun_dens_pop",
+               "employees")
+
+vWhereClauses <- c(sprintf("w.wz_abt = '47'"),
+                   sprintf("w.wz_abt = '47'"),
+                   sprintf("w.wz_kla IN('47.11','47.81') OR w.wz_gru ='47.2'"),
+                   sprintf("w.wz_kla IN('47.11','47.81') OR w.wz_gru ='47.2'"),
+                   sprintf("w.wz_abt = '56'"),
+                   sprintf("w.wz_abt = '56'"),
+                   sprintf("w.wz_gru IN('85.1','85.2','85.3','85.4')"),
+                   sprintf("w.wz_gru IN('85.1','85.2','85.3','85.4')"), 
+                   sprintf("w.wz_abt = '86' OR w.wz_kla IN('47.73','47.74')"),
+                   sprintf("w.wz_abt = '86' OR w.wz_kla IN('47.73','47.74')"),
+                   sprintf("w.wz_abt IN ('90','91','92','93')"),
+                   sprintf("w.wz_abt IN ('90','91','92','93')"),
+                   sprintf("")
+                   )
 
 
-### Write Cols of resutl table with the names from vColNames
 
+
+
+### Write Temporary Intersec table storing data for computation speed up
+
+createTempISTable <- function (
+  con,
+  result_table_schema, result_table_name, result_table_id, result_table_geom,
+  pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
+  wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru
+) 
+  
+{
+  tempISTable <- dbGetQuery(connection, sprintf(
+    
+    "DROP TABLE IF EXISTS public.tempIS;
+    
+    SELECT * INTO public.tempIS FROM
+    (
+    SELECT 
+    row_number() over (order by 1) as key,
+    p.%s AS pos_id,
+    r.%s AS agg_id,
+    St_Area(r.%s) AS area,
+    p.%s AS employees,
+    w.%s AS wz_abt,
+    w.%s AS wz_kla,
+    w.%s AS wz_gru
+    FROM %s.%s AS p 
+    JOIN %s.%s AS r 
+    ON ST_Within(p.%s, r.%s) 
+    JOIN %s.%s AS w
+    ON w.%s = p.%s 
+    GROUP BY pos_id, r.%s , r.geom, p.employee, w.wz_abt, w.wz_kla, w.wz_gru
+    ORDER BY r.%s
+    ) as foo;
+    
+    ALTER TABLE public.tempIS ADD PRIMARY KEY (key);"
+    ,
+    
+    pos_table_id,                      ## SELECT -0-  gid [primary-key]
+    result_table_id,                   ## SELECT -1-  agg_id
+    result_table_geom,                 ## SELECT -2-  area
+    pos_table_empCol,                  ## SELECT -2b- employees
+    wz_table_colAbt,                   ## SELECT -3-  wz-abteilung key column (WZ 2008)
+    wz_table_colKla,                   ## SELECT -3-  wz-klassen key column (WZ 2008)
+    wz_table_colGru,                   ## SELECT -3-  wz-gruppen key column (WZ 2008)
+    pos_table_schema, pos_table,       ## FROM AS p; "Point of Sale" table- containg addresses and point data
+    result_table_schema, result_table_name,  ## JOIN r
+    pos_table_geom, result_table_geom,    ## ON ST_Within (points from POS-table in area of result table geoms) 
+    wz_table_schema, wz_table,         ## JOIN AS w; "Wirtschaftszwiege" table- containg short form handles
+    wz_table_id, pos_table_wzid,       ## ON - wz_id = wz_id the join btwn the wz ids form wz and pos table
+    result_table_id,                   ## GRROUP BY agg_id
+    result_table_id                    ## GRROUP BY agg_id
+    
+  ))
+  
+  return(tempISTable)
+}
+
+
+
+##
+### Write Cols into result table with the names from vColNames
+##
 updateResultTable <- function(con, vColNames, result_table_name)
 
   {
   newColNames <- dbGetQuery(con, sprintf( 
     
-    "ALTER TABLE %s DROP COLUMN IF EXISTS %s;
-    ALTER TABLE %s ADD COLUMN %s FLOAT;
+    "ALTER TABLE %s DROP COLUMN IF EXISTS %s_dens;
+    ALTER TABLE %s ADD COLUMN %s_dens FLOAT;
     "
     ,
     result_table_name, vektorColNames,
     result_table_name, vektorColNames
-    
-  ))
+    ))
   return(newColNames)
 }
 
-### Insert Function updating the results table with the calculated data
-  
-insertActivityDens2table <- function(con, vektorColNames,
-                            result_table_schema, result_table_name, agg_id, result_table_geom,
-                            ex_table1_schema, ex_table1, ex_table1_id, ex_table1_geom,
-                            ex_table2_schema, ex_table2, ex_table2_col,ex_table2_geom)
 
+
+
+##
+### Insert Function updating the results table with the calculated data
+##
+
+updateTable <- function (connection,
+                         vektorColNames, vWhereClauses,
+                         result_table_schema, result_table_name, result_table_id, result_table_popTotCol
+                         ) 
 {
-  popPerCell <- dbGetQuery(con, sprintf( 
-    
-    "UPDATE %s 
-    SET %s = foo.%s
-    FROM (
-    
-    With hhPerBlk AS (
-    SELECT
-    p.%s AS blk_id,
-    sum(%s) AS hhPerBlk
-    FROM %s.%s k
-    JOIN %s.%s p
-    ON ST_Within(k.%s, p.%s)
-    GROUP by p.blk_id),
-    
-    popPerHh AS (
+  updatedResultTable <- dbGetQuery(connection, sprintf( 
+  
+  "UPDATE %s 
+  SET %s = foo.%s
+  FROM (
+    With %s AS 
+    (
     SELECT 
-    p.%s / h.hhPerBlk AS popPerHh,
-    p.%s AS blk_id
-    FROM %s.%s AS p
-    LEFT JOIN hhPerBlk as h
-    ON p.blk_id = h.blk_id
-    WHERE h.hhPerBlk >0
-    GROUP BY p.blk_id, p.%s, h.hhPerBlk)
-    
-    SELECT 
-    sum(k.%s*popPerHh) as %s,
-    g.%s
-    FROM %s.%s g
-    JOIN %s.%s k
-    ON ST_Within(k.%s, g.%s)
-    LEFT JOIN %s.%s p 
-    ON ST_Within (k.%s, p.%s)
-    LEFT JOIN popPerHh as pop
-    ON p.%s = pop.blk_id
-    GROUP BY g.%s
-    ) as foo
-    WHERE %s.%s = foo.%s
-    
-    ;"
-    ,
-    result_table_name,                 ## UPDATE
-    vektorColNames, vektorColNames,    ## SET 
-    ex_table1_id,                      ## SELECT 1 p.
-    ex_table2_col,                     ## sum - hh
-    ex_table2_schema, ex_table2,       ## FROM k  kgs44
-    ex_table1_schema, ex_table1,       ## JOIN  p
-    ex_table2_geom, ex_table1_geom,    ## ST_Within (points from kgs in area of population cell aka pop_blk)
-    vektorColNames,                    ## SELECT 1 division
-    ex_table1_id,                      ## SELECT 1 p.
-    ex_table1_schema, ex_table1,       ## FROM  p
-    vektorColNames,                    ## GROUP BY
-    ex_table2_col, vektorColNames,     ## SELECT1 - hh, Colnames
-    agg_id,                            ## SELECT2 - g - grid
-    result_table_schema,result_table_name,  ## FROM g
-    ex_table2_schema, ex_table2,       ## JOIN k  kgs44
-    ex_table2_geom, result_table_geom, ## ON ST_Within -1- (points form kgs in area of result geom - grids)
-    ex_table1_schema, ex_table1,       ## LEFT JOIN p
-    ex_table2_geom, ex_table1_geom,    ## ON ST_Within -2- (points form kgs in area of population cell aka pop_blk)
-    ex_table1_id,                      ## ON -3- p.
-    agg_id,                            ## GROUP BY
-    result_table_name, agg_id, agg_id  ## WHERE
-    
+      isT.%s AS agg_id,
+        CASE 
+          WHEN %s != 'employees'
+            COUNT (isT.pos_id) AS vColNames
+          ELSE 
+            SUM(isT.employees) shops AS vColNames
+        END
+          FROM public.tempISTable AS isT
+          WHERE %s 
+    GROUP BY agg_id
+    ORDER BY agg_id)
+  
+  SELECT 
+      CASE
+        WHEN %s LIKE ('%_pop')
+          t.%s / (r.%s / 1000) AS %s
+        WHEN %s = 'employees'
+          t.% AS %s
+        ELSE
+          t.% / tis.area AS %s
+    FROM %S.%s AS r
+      LEFT JOIN public.%s AS t
+        ON r.agg_id = t.agg_id
+      LEFT JOIN public.tempis AS tis
+        ON r.agg_id = tis.agg_id
+  )as foo
+   WHERE %s.%s = foo.agg_id
+  ;"
+  ,
+  result_table_name,                 ## UPDATE  
+  vektorColNames, vektorColNames,    ## SET
+  vektorColNames,                    ## with table name
+  result_table_name,                 ## UPDATE
+  vektorColNames, vektorColNames,    ## SET 
+  result_table_id,                   ## SELECT -1-  agg_id
+  vektorColNames,                    ## CASE WHEN 
+  vWhereClauses,                     ## WHERE
+  vektorColNames,                    ## CASE WHEN -1-
+  vektorColNames, result_table_popTotCol, vektorColNames,    ## t.%s, pop_tot, vcolNames
+  vektorColNames,                    ## CASE WHEN -2-
+  vektorColNames, vektorColNames,    ## t% As %
+  vektorColNames, vektorColNames,    ## CASE ELSE -3-
+  result_table_schema, result_table_name,  ## FROM r
+  vektorColNames,                    ## LEFT JOIN -1-
+  result_table_name, result_table_id, result_table_id  ## WHERE
   ))
 
-  return(popPerCell)
+  return(updatedResultTable)
   
 }
   
-  WITH shops AS 
-(
-SELECT p.plr_id, COUNT(s.*) shops 
-FROM urmo.pos s 
-JOIN urmo.plr p ON ST_Within(s.the_geom, p.the_geom) 
-JOIN urmo.wz w ON w.wz_id = s.wz_id 
-WHERE w.wz_abt = '47' 
-GROUP BY p.plr_id 
-ORDER BY p.plr_id
-), daily AS 
-(
-SELECT p.plr_id, COUNT(s.*) daily 
-FROM urmo.pos s 
-JOIN urmo.plr p ON ST_Within(s.the_geom, p.the_geom) 
-JOIN urmo.wz w ON w.wz_id = s.wz_id 
-WHERE w.wz_kla IN ('47.11', '47.81') OR w.wz_gru = '47.2' 
-GROUP BY p.plr_id 
-ORDER BY p.plr_id
-), restaurants AS 
-(
-SELECT p.plr_id, COUNT(s.*) restaurants 
-FROM urmo.pos s 
-JOIN urmo.plr p ON ST_Within(s.the_geom, p.the_geom) 
-JOIN urmo.wz w ON w.wz_id = s.wz_id 
-WHERE w.wz_abt = '56' 
-GROUP BY p.plr_id 
-ORDER BY p.plr_id
-), schools AS 
-(
-SELECT p.plr_id, COUNT(s.*) schools 
-FROM urmo.pos s 
-JOIN urmo.plr p ON ST_Within(s.the_geom, p.the_geom) 
-JOIN urmo.wz w ON w.wz_id = s.wz_id 
-WHERE w.wz_gru IN ('85.1' , '85.2', '85.3', '85.4') 
-GROUP BY p.plr_id 
-ORDER BY p.plr_id
-), health AS 
-(
-SELECT p.plr_id, COUNT(s.*) health 
-FROM urmo.pos s 
-JOIN urmo.plr p ON ST_Within(s.the_geom, p.the_geom) 
-JOIN urmo.wz w ON w.wz_id = s.wz_id 
-WHERE w.wz_abt = '86' OR w.wz_kla IN ('47.73', '47.74') 
-GROUP BY p.plr_id 
-ORDER BY p.plr_id
-), fun AS 
-(
-SELECT p.plr_id, COUNT(s.*) fun 
-FROM urmo.pos s 
-JOIN urmo.plr p ON ST_Within(s.the_geom, p.the_geom) 
-JOIN urmo.wz w ON w.wz_id = s.wz_id 
-WHERE w.wz_abt IN ('90', '91', '92', '93') 
-GROUP BY p.plr_id 
-ORDER BY p.plr_id
-) 
-SELECT p.plr_id, 
---s.shops, 
-s.shops / (ST_Area(p.the_geom) / 1000000) shop_dens, 
-s.shops / (o.pop_tot / 1000) shop_dens_pop, 
---d.daily, 
-d.daily / (ST_Area(p.the_geom) / 1000000) daily_dens, 
-d.daily / (o.pop_tot / 1000) daily_dens_pop, 
---r.restaurants rest, 
-r.restaurants / (ST_Area(p.the_geom) / 1000000) rest_dens, 
-r.restaurants / (o.pop_tot / 1000) rest_dens_pop, 
---c.schools, 
-c.schools / (ST_Area(p.the_geom) / 1000000) school_dens, 
-c.schools / (o.pop_tot / 1000) school_dens_pop, 
---h.health, 
-h.health / (ST_Area(p.the_geom) / 1000000) health_dens, 
-h.health / (o.pop_tot / 1000) health_dens_pop, 
---f.fun, 
-f.fun / (ST_Area(p.the_geom) / 1000000) fun_dens, 
-f.fun / (o.pop_tot / 1000) fun_dens_pop 
-FROM urmo.plr p 
-LEFT JOIN urmo.pop_plr o ON o.plr_id = p.plr_id 
-LEFT JOIN shops s ON s.plr_id = p.plr_id 
-LEFT JOIN daily d ON d.plr_id = p.plr_id 
-LEFT JOIN restaurants r on r.plr_id = p.plr_id 
-LEFT JOIN schools c on c.plr_id = p.plr_id 
-LEFT JOIN health h on h.plr_id = p.plr_id 
-LEFT JOIN fun f on f.plr_id = p.plr_id 
+##
+### Collecting all helper functions into one function
+##
+
+
+calcActivityDens2ResultTable <- function (con, vColNames, vWhereClauses,
+                                          result_table_schema, result_table_name, result_table_id, result_table_geom,
+                                          pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
+                                          wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru)
+{  tempISTable <- createTempISTable (
+    con,
+    result_table_schema, result_table_name, result_table_id, result_table_geom,
+    pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
+    wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru) 
+  
+  
+  updateResultTable <- function(con, vColNames, result_table_name)
+    
+    
+  updatedTable <- function (connection,
+                              vektorColNames, vWhereClauses,
+                              result_table_schema, result_table_name, result_table_id, result_table_popTotCol)
+    
+}
+
+
+### USAGE:
+
+#calcA
