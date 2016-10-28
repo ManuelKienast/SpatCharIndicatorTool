@@ -265,21 +265,21 @@ calcActivityDens2ResultTable (con, vectorColNames, vWhereClauses,
 #######  Variables for testing  ########################################################################################
 ###############################################################################################
 ### INPUT ORDER USAGE:
-# con, vColNames, vWhereClauses,
+# con, vectorColNames, vWhereClauses,
 # result_table_schema, result_table_name, result_table_id, result_table_popTotCol, result_table_geom,
 # pos_table_schema, pos_table, pos_table_id, pos_table_empCol, pos_table_wzid, pos_table_geom,
 # wz_table_schema, wz_table, wz_table_id, wz_table_colAbt, wz_table_colKla, wz_table_colGru)
 ##
 ### VARIABLES ORDER USAGE:
 ##
-# con, vColNames, vWhereClauses,
+# con, vectorColNames, vWhereClauses,
 # result_table_schema <- "public", result_table_name <- "result_bike_hex_2000", result_table_id <- "agg_id", result_table_popTotCol <- "pop_tot", result_table_geom <- "geom",
 # pos_table_schema <- "urmo", pos_table <- "pos", pos_table_id <- "gid", pos_table_empCol <- "employee" pos_table_wzid <- "wz_id", pos_table_geom <- "the_geom",
 # wz_table_schema <- "urmo", wz_table <- "wz", wz_table_id <- "wz_id", wz_table_colAbt <- "wz_abt", wz_table_colKla <- "wz_kla", wz_table_colGru <- "wz_gru"
 ##
 ##USAGE:
 ##
-# con, vColNames, vWhereClauses,
+# con, vectorColNames, vWhereClauses,
 # "public", "result_bike_hex_2000", "agg_id", "pop_tot" "geom",
 # "urmo", "pos", "gid", "employee" "wz_id", "the_geom",
 # "urmo", "wz", "wz_id", "wz_abt", "wz_kla", "wz_gru"
