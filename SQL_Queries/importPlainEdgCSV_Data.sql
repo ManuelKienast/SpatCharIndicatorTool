@@ -21,4 +21,9 @@ COPY public.testImportEdge (edges_version, edge_from, edge_id, edge_name, edge_n
 FROM 'D:\Manuel\vonSimon\Von Matthias\net_plain.edg.csv' WITH CSV HEADER DELIMITER ';'
 
 UPDATE public.testImportEdge
-SET geom = ST_Transform(St_GeomFromText('Point ('|| testImport.node_x ||' '|| testImport.node_y || ')', 4326), 25833);
+SET edge_shape = REPLACE(edge_shape, ' ', '#')
+SET edge_shape = REPLACE(edge_shape, ',', ' ');
+SET edge_shape = REPLACE(edge_shape, '#', ', ');
+
+UPDATE public.testImportEdge
+SET geom = ST_Transform(St_GeomFromText('MultiLineString ((' || testImportEdge.edge_shape || '))', 4326), 25833);
