@@ -3,8 +3,8 @@
 ##
 
 importaggregatedOneShotCSV <- function ( connection,
-                                table_schema, table_name,
-                                filepath)
+                                table_schema, table_name_aggregated,
+                                filepath_aggregated)
 {
   
   aggregatedOneShotCSV <- dbGetQuery(connection, sprintf(
@@ -37,10 +37,10 @@ importaggregatedOneShotCSV <- function ( connection,
     
     "
     ,
-    table_schema, table_name,    ## DROP TABLE
-    table_schema, table_name,    ## CREATE TABLE
-    table_schema, table_name,    ## COPY
-    filepath                     ## FROM
+    table_schema, table_name_aggregated,    ## DROP TABLE
+    table_schema, table_name_aggregated,    ## CREATE TABLE
+    table_schema, table_name_aggregated,    ## COPY
+    filepath_aggregated                     ## FROM
     
     ))
 }

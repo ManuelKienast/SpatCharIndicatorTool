@@ -4,8 +4,8 @@
 
 
 importPlainEdgCSV <- function ( connection,
-                                table_schema, table_name,
-                                set_CS2, filepath)
+                                table_schema, table_name_edg,
+                                set_CS2, filepath_edg)
 {
   
   plainEdgCSV <- dbGetQuery(connection, sprintf(
@@ -45,16 +45,16 @@ importPlainEdgCSV <- function ( connection,
     
     "
     ,
-    table_schema, table_name,    ## DROP TABLE
-    table_schema, table_name,    ## CREATE TABLE
+    table_schema, table_name_edg,    ## DROP TABLE
+    table_schema, table_name_edg,    ## CREATE TABLE
     set_CS2,                     ## "geom"
-    table_schema, table_name,    ## COPY
-    filepath,                    ## FROM
-    table_schema, table_name,    ## UPDATE -1- 
-    table_schema, table_name,    ## UPDATE -2-
-    table_schema, table_name,    ## UPDATE -3-
-    table_schema, table_name,    ## UPDATE -4-
-    table_name, set_CS2          ## SET geom
+    table_schema, table_name_edg,    ## COPY
+    filepath_edg,                    ## FROM
+    table_schema, table_name_edg,    ## UPDATE -1- 
+    table_schema, table_name_edg,    ## UPDATE -2-
+    table_schema, table_name_edg,    ## UPDATE -3-
+    table_schema, table_name_edg,    ## UPDATE -4-
+    table_name_edg, set_CS2          ## SET geom
   ))
 }
 

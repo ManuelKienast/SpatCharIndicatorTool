@@ -4,8 +4,8 @@
 
 
 importPlainNodCSV <- function ( connection,
-                                table_schema, table_name,
-                                set_CS2, filepath)
+                                table_schema, table_name_nod,
+                                set_CS2, filepath_nod)
 {
   
   plainNodCSV <- dbGetQuery(connection, sprintf(
@@ -30,13 +30,13 @@ importPlainNodCSV <- function ( connection,
 
     "
     ,
-    table_schema, table_name,    ## DROP TABLE
-    table_schema, table_name,    ## CREATE TABLE
+    table_schema, table_name_nod,    ## DROP TABLE
+    table_schema, table_name_nod,    ## CREATE TABLE
     set_CS2,                     ## "geom"
-    table_schema, table_name,    ## COPY
-    filepath,                    ## FROM
-    table_schema, table_name,    ## COPY
-    table_name, table_name, set_CS2 ## SET geom
+    table_schema, table_name_nod,    ## COPY
+    filepath_nod,                    ## FROM
+    table_schema, table_name_nod,    ## COPY
+    table_name_nod, table_name_nod, set_CS2 ## SET geom
   ))
 }
 
