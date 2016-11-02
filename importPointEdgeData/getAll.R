@@ -40,7 +40,7 @@ aggregate <-  importaggregatedOneShotCSV( con,
   }
   
 
-USAGE:
+#USAGE:
   getAll2import( con,
                              "public",
                              "test_nod",
