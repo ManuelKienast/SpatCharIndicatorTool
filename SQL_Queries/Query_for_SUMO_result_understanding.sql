@@ -80,3 +80,8 @@ LEFT JOIN test_edg AS e
 	ON (a.edge_id = e.edge_id)
 LEFT JOIN test_nod As n
 	ON(e.edge_to = n.node_id)
+
+
+ALTER TABLE public.compiledImport
+      ADD COLUMN gid SERIAL PRIMARY KEY;
+CREATE INDEX compiledImport_gix ON public.compiledImport USING GIST (geom);
