@@ -59,11 +59,10 @@ aggregate <-  importaggregatedOneShotCSV( con,
   {
     
     new_table <- dbGetQuery(connection, sprintf(
+
+    "DROP TABLE IF EXISTS public.compiledImport;
       
-      "
-      DROP TABLE IF EXISTS public.compiledImport;
-      
-      SELECT * INTO public.compiledImport FROM
+    SELECT * INTO public.compiledImport FROM
         (SELECT 
           a.interval_begin,
           a.edge_arrived,
@@ -71,24 +70,24 @@ aggregate <-  importaggregatedOneShotCSV( con,
           a.edge_entered,
           a.edge_left,
           e.edge_id,
-          a.edge_to,
-          a.edge_from,
+          e.edge_to,
+          e.edge_from,
           n.geom
         FROM test_Aggregated AS a
           LEFT JOIN test_edg AS e
             ON (a.edge_id = e.edge_id)
           LEFT JOIN test_nod As n
-            ON(e.edge_to = n.node_id)
+            ON (e.edge_to = n.node_id)
                 
-      ) as foo;
+      )as foo;
       
       ALTER TABLE public.compiledImport
       ADD COLUMN gid SERIAL PRIMARY KEY;
 
       CREATE INDEX compiledImport_gix 
         ON public.compiledImport
-        USING GIST (geom);
-      "
+        USING GIST (geom);"
+      
       ))
 }
   
