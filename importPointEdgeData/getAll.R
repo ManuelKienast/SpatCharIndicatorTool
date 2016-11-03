@@ -49,6 +49,10 @@ aggregate <-  importaggregatedOneShotCSV( con,
 # ########################################################################################################################################
 # ########################################################################################################################################
 ##
+  
+  
+  ### Importantnotice: the Node-geometries are the geometries of the node_tos, i.e. all information is tacked onto the 
+  ### target node, and not the departure node
     
   compile2Table <- function ()
     
@@ -67,7 +71,8 @@ aggregate <-  importaggregatedOneShotCSV( con,
           a.edge_entered,
           a.edge_left,
           e.edge_id,
-          n.node_id,
+          a.edge_to,
+          a.edge_from,
           n.geom
         FROM test_Aggregated AS a
           LEFT JOIN test_edg AS e
