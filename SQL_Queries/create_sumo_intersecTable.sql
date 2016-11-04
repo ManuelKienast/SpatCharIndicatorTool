@@ -1,4 +1,4 @@
-﻿  
+﻿    DROP TABLE IF EXISTS public.sumo_Inters_groupGeom;  
     SELECT * INTO public.sumo_Inters_groupGeom FROM
     (
     SELECT 
@@ -10,6 +10,7 @@
     ci.edge_id,
     ci.edge_to,
     ci.edge_from,
+    ci.interval_begin,
     ci.geom,
     ci.gid
     FROM public.sumo_Inters as ci
@@ -18,5 +19,6 @@
     ci.edge_id,
     ci.edge_to,
     ci.edge_from,
+    interval_begin,
     ci.geom,
     ci.gid) as foo;

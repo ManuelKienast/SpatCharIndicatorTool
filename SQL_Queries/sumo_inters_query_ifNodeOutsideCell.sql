@@ -1,8 +1,13 @@
-﻿select gid, sum(edge_entred) ent, sum(edge_departed) dep, sum(edge_entred)+sum(edge_departed) total
-from sumo_inters_groupgeom
-where gid != SELECT ()
-group by gid
-order by gid
+﻿select a.gid, sum(a.entr) ent, sum(a.dep) dep, sum(a.entr)+sum(a.dep) total
+from sumo_inters_groupgeom as a 
+	LEFT JOIN sumo_inters_groupgeom as b
+		ON (a.edge_from = b.edge_to)
+where a.gid != b.gid
+group by a.gid
+order by a.gid
+
+
+
 
 select *
 from sumo_inters_groupgeom

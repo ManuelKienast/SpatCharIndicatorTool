@@ -2,9 +2,9 @@
 ##calc Intersect table of compiledimport and write it to new table
 ##
 
-### Write Temporary Intersec table storing data for computation speed up
+### 
 
-createTempISTable <- function (connection) 
+createTempISTable <- function (connection, grid_schema, grid_name) 
   
 {
   tempISTable <- dbGetQuery(connection, sprintf(
@@ -23,10 +23,11 @@ createTempISTable <- function (connection)
     ci.edge_id,
     ci.edge_to,
     ci.edge_from,
-    ci.geom,
+    ci.geom as geom_point,
+    r.the_geom as geom_grid,
     r.gid
     FROM public.compiledimport AS ci 
-    JOIN grids.hex_4000 AS r 
+    JOIN %s.%s AS r 
     ON ST_Within(ci.geom, r.the_geom) 
     
     GROUP BY 
@@ -39,6 +40,7 @@ createTempISTable <- function (connection)
     ci.edge_to,
     ci.edge_from,
     ci.geom,
+    r.the_geom,
     r.gid
     
     ) as foo;
@@ -47,34 +49,102 @@ createTempISTable <- function (connection)
     
     CREATE INDEX sumo_Inters_gix 
         ON public.sumo_Inters
-        USING GIST (geom);
+        USING GIST (geom_point);
     "
-  ))
-  
-  return(tempISTable)
-}
-
-sumo_inter <- createTempISTable(con)
-
-
     ,
-    
-    pos_table_id,                      ## SELECT -0-  gid [primary-key]
-    result_table_id,                   ## SELECT -1-  agg_id
-    result_table_geom,                 ## SELECT -2-  area
-    pos_table_empCol,                  ## SELECT -2b- employees
-    wz_table_colAbt,                   ## SELECT -3-  wz-abteilung key column (WZ 2008)
-    wz_table_colKla,                   ## SELECT -3-  wz-klassen key column (WZ 2008)
-    wz_table_colGru,                   ## SELECT -3-  wz-gruppen key column (WZ 2008)
-    pos_table_schema, pos_table,       ## FROM AS p; "Point of Sale" table- containg addresses and point data
-    result_table_schema, result_table_name,  ## JOIN r
-    pos_table_geom, result_table_geom,    ## ON ST_Within (points from POS-table in area of result table geoms) 
-    wz_table_schema, wz_table,         ## JOIN AS w; "Wirtschaftszwiege" table- containg short form handles
-    wz_table_id, pos_table_wzid,       ## ON - wz_id = wz_id the join btwn the wz ids form wz and pos table
-    result_table_id,                   ## GRROUP BY agg_id
-    result_table_id                    ## GRROUP BY agg_id
-    
+    grid_schema, grid_name     ###  JOIN
   ))
   
   return(tempISTable)
 }
+
+
+
+
+############################################################################################### 
+##  ##  ##  compute IntersTable      ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  
+###############################################################################################
+    
+
+calcTrafficTable <- function (connection, resultTable_name
+  
+          )
+{
+  traffic_per_grid <- dbGetQuery(connection, sprintf(
+    
+    "
+  SELECT * INTO public.%s FROM (
+  
+  With Groupie AS (
+
+  SELECT 
+    sum(ci.edge_arrived) as arr,
+    sum(ci.edge_departed) as dep,
+    sum(ci.edge_entered) as entr,
+    sum(ci.edge_left) lef,
+    ci.edge_id,
+    ci.edge_to,
+    ci.edge_from,
+    ci.interval_begin,
+    ci.geom_grid,
+    ci.gid
+    FROM public.sumo_Inters as ci
+        
+    GROUP BY 
+    ci.edge_id,
+    ci.edge_to,
+    ci.edge_from,
+    interval_begin,
+    ci.geom_grid,
+    ci.gid
+    )
+  SELECT 
+    row_number() over (order by 1) as key,
+    a.gid,
+    sum(a.entr) ent,
+    sum(a.dep) dep,
+    sum(a.entr)+sum(a.dep) total,
+    a.geom_grid
+      FROM groupie as a 
+	      LEFT JOIN sumo_inters_groupgeom as b
+		      ON (a.edge_from = b.edge_to)
+    WHERE a.gid != b.gid
+    GROUP BY a.gid, a.geom_grid
+    ORDER BY a.gid
+    ) as foo
+    ;
+    
+    ALTER TABLE public.%s ADD PRIMARY KEY (key);
+    ",
+    resultTable_name,
+    resultTable_name
+  ))
+    
+  }
+
+############################################################################################## 
+#  ##  ##  combination for interation through grids  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  #
+##############################################################################################
+
+
+calcTraffic <- function (connection, grid_schema, grid_name, resultTable_name
+                          
+                         )
+
+  {createTempISTable(connection, grid_schema, grid_name) 
+  
+   calcTrafficTable(connection, resultTable_name)
+                                
+  }                            
+
+ 
+
+calcTraffic(con, "grids", "hex_1000", "SumoTraffic_hex1000")
+
+
+# vgrid <- c(1000, 2000)
+# 
+#   for(grid_size in vgrid){
+#     calcTraffic(con, "grids", sprintf("hex_", grid_size), sprintf("sumo_traffic_hex_%s",grid_size))
+#   }
+#   
