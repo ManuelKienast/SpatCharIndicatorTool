@@ -4,14 +4,14 @@
 
 ### 
 
-createTempISTable <- function (connection, grid_schema, grid_name) 
+createTempISTable <- function (connection, resultTable_name, grid_schema, grid_name) 
   
 {
   tempISTable <- dbGetQuery(connection, sprintf(
     
-    "DROP TABLE IF EXISTS public.sumo_Inters;
+    "DROP TABLE IF EXISTS public.%s_intersect;
     
-    SELECT * INTO public.sumo_Inters FROM
+    SELECT * INTO public.%s_intersect FROM
     (
     SELECT 
     row_number() over (order by 1) as key,
@@ -45,14 +45,17 @@ createTempISTable <- function (connection, grid_schema, grid_name)
     
     ) as foo;
     
-    ALTER TABLE sumo_Inters ADD PRIMARY KEY (key);
-    
-    CREATE INDEX sumo_Inters_gix 
-        ON public.sumo_Inters
+
+    DROP INDEX IF EXISTS %s_intersect_gix;
+    CREATE INDEX %s_intersect_gix 
+        ON public.%s_intersect
         USING GIST (geom_point);
     "
     ,
-    grid_schema, grid_name     ###  JOIN
+    resultTable_name, resultTable_name,   ###  DROP TABLE ...
+    grid_schema, grid_name,               ###  JOIN
+    resultTable_name,resultTable_name,    ###  DROP INDEX
+    resultTable_name                      ###  ON
   ))
   
   return(tempISTable)
@@ -73,54 +76,52 @@ calcTrafficTable <- function (connection, resultTable_name
   traffic_per_grid <- dbGetQuery(connection, sprintf(
     
     "
+  DROP TABLE IF EXISTS public.%s;
   SELECT * INTO public.%s FROM (
   
-  With Groupie AS (
-
-  SELECT 
-    sum(ci.edge_arrived) as arr,
-    sum(ci.edge_departed) as dep,
-    sum(ci.edge_entered) as entr,
-    sum(ci.edge_left) lef,
-    ci.edge_id,
-    ci.edge_to,
-    ci.edge_from,
-    ci.interval_begin,
-    ci.geom_grid,
-    ci.gid
-    FROM public.sumo_Inters as ci
-        
-    GROUP BY 
-    ci.edge_id,
-    ci.edge_to,
-    ci.edge_from,
-    interval_begin,
-    ci.geom_grid,
-    ci.gid
-    )
-  SELECT 
-    row_number() over (order by 1) as key,
+  WITH startingTrips AS(
+   
+    SELECT
+      sum(edge_departed) AS trips_d,
+      gid,
+      geom_grid
+        FROM public.%s_intersect
+        group by gid, geom_grid),
+    
+  EnteringTrips AS(
+    SELECT
+      sum(a.edge_entered) AS trips_e,
+      a.gid
+        FROM public.%s_intersect a
+          LEFT JOIN public.%s_intersect b
+            ON a.edge_from = b.edge_to
+        WHERE a.gid != b.gid AND a.interval_begin = b.interval_begin
+    GROUP BY a.gid)
+    
+  SELECT
     a.gid,
-    sum(a.entr) ent,
-    sum(a.dep) dep,
-    sum(a.entr)+sum(a.dep) total,
+    a.trips_d,
+    b.trips_e,
+    a.trips_d+b.trips_e as total,
     a.geom_grid
-      FROM groupie as a 
-	      LEFT JOIN sumo_inters_groupgeom as b
-		      ON (a.edge_from = b.edge_to)
-    WHERE a.gid != b.gid
-    GROUP BY a.gid, a.geom_grid
-    ORDER BY a.gid
-    ) as foo
+      FROM startingTrips a
+        LEFT JOIN enteringTrips b
+          ON a.gid = b.gid
+    )as foo
     ;
     
-    ALTER TABLE public.%s ADD PRIMARY KEY (key);
+  
     ",
+    resultTable_name,
+    resultTable_name,
+    resultTable_name,
     resultTable_name,
     resultTable_name
   ))
     
   }
+
+
 
 ############################################################################################## 
 #  ##  ##  combination for interation through grids  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  #
@@ -131,7 +132,7 @@ calcTraffic <- function (connection, grid_schema, grid_name, resultTable_name
                           
                          )
 
-  {createTempISTable(connection, grid_schema, grid_name) 
+  {createTempISTable(connection, resultTable_name, grid_schema, grid_name) 
   
    calcTrafficTable(connection, resultTable_name)
                                 
@@ -141,6 +142,8 @@ calcTraffic <- function (connection, grid_schema, grid_name, resultTable_name
 
 calcTraffic(con, "grids", "hex_1000", "SumoTraffic_hex1000")
 
+
+calcTrafficTable(connection, "SumoTraffic_hex4000")
 
 # vgrid <- c(1000, 2000)
 # 
