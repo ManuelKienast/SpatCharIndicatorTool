@@ -110,3 +110,90 @@ select node_id, (sum(edge_Arrived) - sum(edge_departed)) black_holes, sum(edge_A
 from compiledimport
 group by node_id
 order by (sum(edge_Arrived) - sum(edge_departed)) desc
+
+
+---------
+--------- Trying to fix the caclulation of traffic per cell
+---------
+-- total no of trips started = edge departed
+select sum(edge_departed)
+from test_aggregated;
+
+select sum(edge_departed)
+from sumo_Inters_test1000;
+
+select *
+from sumo_Inters_test1000
+limit 1;
+
+-- testing self intersect
+select * 
+from sumo_Inters_test1000 a
+	JOIN sumo_Inters_test1000 b
+		ON a.edge_from = b.edge_to
+WHERE a.gid != b.gid AND a.interval_begin = b.interval_begin
+limit 15
+
+select * 
+from sumo_Inters_test1000
+where interval_begin = '99000'
+
+--- possibly the correct result:
+-- nope or maybe.. 
+select sum(b.edge_departed), sum(a.edge_departed)
+from sumo_Inters_test1000 a
+	JOIN sumo_Inters_test1000 b
+		ON a.edge_from = b.edge_to
+WHERE a.gid != b.gid AND a.interval_begin = b.interval_begin
+
+-- if this ~ 3.2kk then yes but noooo
+select sum(b.edge_departed), sum(a.edge_departed)
+from sumo_Inters_test1000 a
+	JOIN sumo_Inters_test1000 b
+		ON a.edge_from = b.edge_to
+WHERE a.gid = b.gid AND a.interval_begin = b.interval_begin
+
+with fromNode as(
+	select 
+		edge_to,
+		gid,
+		interval_begin
+			from sumo_Inters_test1000)
+
+	select
+		sum(edge_departed),
+		sum(edge_entered)
+			from sumo_Inters_test1000 a
+				left JOIN fromNode b
+					ON a.edge_from = b.edge_to
+		WHERE a.gid != b.gid AND a.interval_begin = b.interval_begin
+
+--- this has to be added to the cars entereing a gridcell, they do when gid != edge_from (gid)
+
+with startingTrips AS(
+select sum(edge_departed) trips_d, gid
+from sumo_Inters_test1000
+group by gid),
+
+enteringTrips AS(
+SELECT sum(a.edge_entered) as trips_e,
+       a.gid
+	FROM sumo_Inters_test1000 a
+		left JOIN sumo_Inters_test1000 b
+			ON a.edge_from = b.edge_to
+		WHERE a.gid != b.gid AND a.interval_begin = b.interval_begin
+		GROUP BY a.gid)
+
+	SELECT
+	a.gid,
+	a.trips_d,
+	b.trips_e
+		
+	FROM startingTrips a
+		LEFT JOIN enteringTrips b
+		ON a.gid = b.gid
+	ORDER BY b.trips_e desc
+
+
+
+select 
