@@ -186,7 +186,7 @@ importPlainEdgCSV <- function ( connection,
 ## Import Script for 'aggregated_oneshot_meso.csv' data
 ##
 
-importaggregatedOneShotCSV <- function ( connection,
+importAggregatedOneShotCSV <- function ( connection,
                                          table_schema, table_name_aggregated,
                                          filepath_aggregated)
 {

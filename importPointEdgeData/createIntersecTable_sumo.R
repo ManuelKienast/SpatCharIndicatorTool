@@ -140,11 +140,11 @@ calcTraffic <- function (connection, grid_schema, grid_name, resultTable_name
 
  
 
-calcTraffic(con, "grids", "hex_1000", "SumoTraffic_hex1000")
+calcTraffic(con, "grids", "hex_4000", "SumoTraffic_hex4000")
 
 
-calcTrafficTable(connection, "SumoTraffic_hex4000")
-
+#calcTrafficTable(connection, "SumoTraffic_hex4000")
+#
 # vgrid <- c(1000, 2000)
 # 
 #   for(grid_size in vgrid){
