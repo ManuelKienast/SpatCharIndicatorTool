@@ -4,7 +4,7 @@
 
 ### 
 
-createTempISTable <- function (connection, resultTable_name, grid_schema, grid_name) 
+createTempISTable <- function (connection, resultTable_name, grid_schema, grid_name, grid_geom) 
   
 {
   tempISTable <- dbGetQuery(connection, sprintf(
@@ -24,26 +24,12 @@ createTempISTable <- function (connection, resultTable_name, grid_schema, grid_n
     ci.edge_to,
     ci.edge_from,
     ci.geom as geom_point,
-    r.the_geom as geom_grid,
+    r.%s as geom_grid,
     r.gid
     FROM public.compiledimport AS ci 
     JOIN %s.%s AS r 
-    ON ST_Within(ci.geom, r.the_geom) 
-    
-    GROUP BY 
-    ci.interval_begin,
-    ci.edge_arrived,
-    ci.edge_departed,
-    ci.edge_entered,
-    ci.edge_left,
-    ci.edge_id,
-    ci.edge_to,
-    ci.edge_from,
-    ci.geom,
-    r.the_geom,
-    r.gid
-    
-    ) as foo;
+    ON ST_Within(ci.geom, r.%s) 
+     ) as foo;
     
 
     DROP INDEX IF EXISTS %s_intersect_gix;
@@ -53,7 +39,9 @@ createTempISTable <- function (connection, resultTable_name, grid_schema, grid_n
     "
     ,
     resultTable_name, resultTable_name,   ###  DROP TABLE ...
+    grid_geom,                            ###
     grid_schema, grid_name,               ###  JOIN
+    grid_geom,                            ###  St_within
     resultTable_name,resultTable_name,    ###  DROP INDEX
     resultTable_name                      ###  ON
   ))
@@ -128,19 +116,24 @@ calcTrafficTable <- function (connection, resultTable_name
 ##############################################################################################
 
 
-calcTraffic <- function (connection, grid_schema, grid_name, resultTable_name
+calcTraffic <- function (connection, grid_schema, grid_name, resultTable_name, grid_geom
                           
                          )
 
-  {createTempISTable(connection, resultTable_name, grid_schema, grid_name) 
+  {createTempISTable(connection, resultTable_name, grid_schema, grid_name, grid_geom) 
   
    calcTrafficTable(connection, resultTable_name)
                                 
   }                            
 
  
+gridsize <- c("500", "1000", "2000", "4000")
 
-calcTraffic(con, "grids", "hex_4000", "SumoTraffic_hex4000")
+for (i in gridsize){
+  calcTraffic(con, "grids", sprintf("fish_%s",i), sprintf("SumoTraffic_fish_%s",i), "geom")
+  }
+  
+
 
 
 #calcTrafficTable(connection, "SumoTraffic_hex4000")
