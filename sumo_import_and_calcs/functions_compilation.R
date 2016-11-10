@@ -363,7 +363,7 @@ getAll2import <- function( con,
                                  importTables_schema, table_name_edg,
                                  set_CS2, filepath_edg)
   
-  aggregate <-  importaggregatedOneShotCSV( con,
+  aggregate <-  importAggregatedOneShotCSV( con,
                                             importTables_schema, table_name_aggregated,
                                             filepath_aggregated)
   
@@ -375,13 +375,13 @@ getAll2import <- function( con,
 
 
 #USAGE:
- getAll2import( con,
- "public", "compiledimport",
- "test_nod", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.nod.csv",
- "test_edg", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.edg.csv",
- "test_aggregated", "D:\\Manuel\\vonSimon\\Von Matthias\\aggregated_oneshot_meso.csv",
- "25833"
- )
+ # getAll2import( con,
+ # "public", "compiledimport",
+ # "test_nod", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.nod.csv",
+ # "test_edg", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.edg.csv",
+ # "test_aggregated", "D:\\Manuel\\vonSimon\\Von Matthias\\aggregated_oneshot_meso.csv",
+ # "25833"
+ # )
 
 
 
@@ -423,9 +423,9 @@ createSumoInterSectionTable <- function( connection,
       )as foo;
     
     
-    DROP INDEX IF EXISTS %s.%s_intersect_gix;
+    DROP INDEX IF EXISTS %s_intersect_gix;
     
-    CREATE INDEX %s.%s_intersect_gix 
+    CREATE INDEX %s_intersect_gix 
       ON %s.%s_intersect
       USING GIST (geom_point);
     "
@@ -436,8 +436,8 @@ createSumoInterSectionTable <- function( connection,
     importTables_schema, table_name_compiled,    ###  FROM AS ci
     grid_schema, grid_name,               ###  JOIN
     grid_geom,                            ###  St_within
-    resultTable_schema, resultTable_name, ###  DROP INDEX
-    resultTable_schema, resultTable_name, ###  CREATE INDEX
+    resultTable_name,                     ###  DROP INDEX
+    resultTable_name, ###  CREATE INDEX
     resultTable_schema, resultTable_name  ###  ON
   ))
   
@@ -527,4 +527,5 @@ calcTraffic <- function( connection,
 
 
 #USAGE:
-  # calcTraffic(con, "public", "sumotraffic_hex4000", "grids", "hex_4000", "geom", "public", "compiledimport")
+  # calcTraffic(con, "public", "sumotraffic_hex4000", "grids", "hex_4000", "the_geom", "public", "compiledimport")
+  # test: for (i in grids)
