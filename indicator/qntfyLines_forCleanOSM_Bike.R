@@ -40,10 +40,10 @@ createInterSecTable <- function (
           FROM
             %s AS Agg_Area
               LEFT JOIN %s AS Ex_Area
-            ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-              WHERE 
-                  -- Ex_Area.%s LIKE '%s' AND 
-                  ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
+                ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
+          WHERE 
+          -- Ex_Area.%s LIKE '%s' AND 
+             ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
       ) as foo;
 
     ALTER TABLE InterSec ADD PRIMARY KEY (key)
@@ -74,12 +74,16 @@ createInterSecTable <- function (
 ## getting the vector of dictinct variables from Agg_Area table
 ## reminder: switch WHERE linetype to 'highway%' for OSM data, otherwise no WHERE is needed
 
-getVDist <- function (connection)
-{VDistdf <- dbGetQuery(connection, sprintf(
-  "SELECT DISTINCT linetype 
-  FROM Intersec
+getVDist <- function (
+                      connection
+                      )
+{
+  VDistdf <- dbGetQuery(connection, sprintf(
   
-  ;"))
+  "SELECT DISTINCT linetype 
+    FROM Intersec
+    ;"
+  ))
 
 VDist <- VDistdf[,1]
 
@@ -91,26 +95,29 @@ return(VDist)
 ## writing results table
 ## create result table with Agg_Area_Id and its geom to select other results into
 
-createResultTable <- function (connection,
+createResultTable <- function( connection,
                                result_table_name,
                                id_column,
                                Agg_geom,
                                Agg_Area
-)
-{dbGetQuery(connection, sprintf(
+                               )
+  
+{
+  dbGetQuery(connection, sprintf(
   
   "DROP TABLE IF EXISTS %s;
   
   SELECT 
-  row_number() over (order by 1) as key,
-  %s AS Agg_Id,
-  %s AS geom
-  INTO %s
-  FROM %s AS Agg_Area
-  WHERE ST_isValid(Agg_Area.%s) = TRUE AND ST_isSimple(Agg_Area.%s) = TRUE
+    row_number() over (order by 1) as key,
+    %s AS Agg_Id,
+    %s AS geom
+      INTO %s
+        FROM %s AS Agg_Area
+        WHERE ST_isValid(Agg_Area.%s) = TRUE AND ST_isSimple(Agg_Area.%s) = TRUE
   ;
   
-  ALTER TABLE %s ADD PRIMARY KEY (key);"
+  ALTER TABLE %s ADD PRIMARY KEY (key)
+  ;"
   ,
   result_table_name,
   id_column,       ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
@@ -132,26 +139,31 @@ createResultTable <- function (connection,
 ##
 
 
-updateTable <- function (connection,
+updateTable <- function( connection,
                          vDist,
                          result_table_name
-) 
-{dbGetQuery(connection, sprintf( 
+                         )
   
-  "ALTER TABLE %s DROP COLUMN IF EXISTS sum_%s;
-  ALTER TABLE %s ADD COLUMN sum_%s FLOAT;
+{
+  dbGetQuery(connection, sprintf( 
+  
+  "ALTER TABLE %s DROP COLUMN IF EXISTS sum_%s
+  ;
+  ALTER TABLE %s ADD COLUMN sum_%s FLOAT
+  ;
+  
   UPDATE %s 
-  SET sum_%s = foo.sum_%s
-  FROM (
-  SELECT 
-  Agg_ID,
-  SUM(ST_Length(geom))/1000 AS sum_%s
-  FROM InterSec
-  WHERE lineType = '%s'
-  GROUP BY Agg_ID
-  ORDER BY Agg_ID
-  ) as foo
-  WHERE %s.Agg_ID = foo.Agg_ID
+    SET sum_%s = foo.sum_%s
+      FROM (
+        SELECT 
+          Agg_ID,
+          SUM(ST_Length(geom))/1000 AS sum_%s
+            FROM InterSec
+        WHERE lineType = '%s'
+        GROUP BY Agg_ID
+        ORDER BY Agg_ID
+        ) as foo
+      WHERE %s.Agg_ID = foo.Agg_ID
   ;"
   ,
   result_table_name,
@@ -172,14 +184,16 @@ updateTable <- function (connection,
 ## inserting the total length into Table results
 ## calc the total length of selected line types
 
-sumLength <- function (connection,
+sumLength <- function( connection,
                        vDist,
                        result_table_name
-)
-{sumLength <- dbGetQuery(connection, sprintf(
+                       )
+  
+{
+  sumLength <- dbGetQuery(connection, sprintf(
   
   "UPDATE %s
-  SET sum_length = COALESCE(sum_length,0)+COALESCE(sum_%s,0)  -- summation of all values listed in the V(Dist)
+    SET sum_length = COALESCE(sum_length,0)+COALESCE(sum_%s,0)  -- summation of all values listed in the V(Dist)
   ;"
   ,
   result_table_name,
@@ -191,18 +205,23 @@ sumLength <- function (connection,
 ##########  FUNCTION  ##########  
 ## setting Function for line quantification
 
-ratioLines2Table <- function (connection,
+ratioLines2Table <- function( connection,
                               result_table_name,
                               vDist
-) 
-{calcRatios <- dbGetQuery(connection, sprintf( 
+                              ) 
   
-  "ALTER TABLE %s DROP COLUMN IF EXISTS ratio_%s;
-  ALTER TABLE %s ADD COLUMN ratio_%s FLOAT;
+{
+  calcRatios <- dbGetQuery(connection, sprintf( 
+  
+  "ALTER TABLE %s DROP COLUMN IF EXISTS ratio_%s
+  ;
+  ALTER TABLE %s ADD COLUMN ratio_%s FLOAT
+  ;
   
   UPDATE %s 
-  SET ratio_%s = sum_%s/sum_length
-  ;",
+    SET ratio_%s = sum_%s/sum_length
+  ;"
+  ,
   result_table_name,
   vDist,         ## DROP COl     -- vector containing distinct values
   result_table_name,
@@ -216,16 +235,11 @@ ratioLines2Table <- function (connection,
 ##########  FUNCTION  ##########  
 ## the complete Function
 
-qntfyLinesBike <- function (
-  connection,
-  result_table_name,
-  Agg_Area,
-  id_column,
-  Agg_geom,
-  Ex_Area,
-  label_column,
-  Ex_geom
-)
+qntfyLinesBike <- function( connection,
+                            result_table_name,
+                            Agg_Area, id_column, Agg_geom,
+                            Ex_Area, label_column, Ex_geom
+                            )
   
 {
   createInterSecTable(connection, Agg_Area, id_column, Agg_geom, Ex_Area, label_column, Ex_geom)
