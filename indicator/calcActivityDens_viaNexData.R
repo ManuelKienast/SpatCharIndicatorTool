@@ -75,22 +75,22 @@ createTempISTable <- function (
     
     SELECT * INTO public.tempIS FROM
     (
-    SELECT 
-    row_number() over (order by 1) as key,
-    p.%s AS pos_id,
-    r.%s AS agg_id,
-    St_Area(r.%s)/1000000 AS area_km2,
-    p.%s AS employees,
-    w.%s AS wz_abt,
-    w.%s AS wz_kla,
-    w.%s AS wz_gru
-    FROM %s.%s AS p 
-    JOIN %s.%s AS r 
-    ON ST_Within(p.%s, r.%s) 
-    JOIN %s.%s AS w
-    ON w.%s = p.%s 
-    GROUP BY pos_id, r.%s , r.geom, p.employee, w.wz_abt, w.wz_kla, w.wz_gru
-    ORDER BY r.%s
+      SELECT 
+        row_number() over (order by 1) as key,
+        p.%s AS pos_id,
+        r.%s AS agg_id,
+        St_Area(r.%s)/1000000 AS area_km2,
+        p.%s AS employees,
+        w.%s AS wz_abt,
+        w.%s AS wz_kla,
+        w.%s AS wz_gru
+          FROM %s.%s AS p 
+            JOIN %s.%s AS r 
+              ON ST_Within(p.%s, r.%s) 
+            JOIN %s.%s AS w
+              ON w.%s = p.%s 
+      GROUP BY pos_id, r.%s , r.geom, p.employee, w.wz_abt, w.wz_kla, w.wz_gru
+      ORDER BY r.%s
     ) as foo;
     
     ALTER TABLE public.tempIS ADD PRIMARY KEY (key);"
@@ -151,9 +151,9 @@ updateTable <- function (connection,
   updatedResultTable <- dbGetQuery(connection, sprintf( 
   
   "UPDATE %s 
-  SET %s = foo.%s
-  FROM (
-    With %s AS(
+    SET %s = foo.%s
+    FROM (
+      With %s AS(
     
   SELECT 
       isT.%s AS agg_id,
