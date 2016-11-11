@@ -16,15 +16,10 @@ library(RODBC)
 ##  Additionally the setting of the WHERE col LIKE hw_ is necessary for calc of all, not for calc of bike ratio yes|no
 ##
 
-createInterSecTable <- function (
-  connection,
-  Agg_Area,
-  id_column,
-  Agg_geom,
-  Ex_Area,
-  label_column,
-  Ex_geom
-) 
+createInterSecTable <- function( connection,
+                                 Agg_Area, id_column, Agg_geom,
+                                 Ex_Area, label_column, Ex_geom
+                                 ) 
 {
   
   intersectTable <- dbGetQuery(connection, sprintf(
@@ -96,10 +91,8 @@ return(VDist)
 ## create result table with Agg_Area_Id and its geom to select other results into
 
 createResultTable <- function( connection,
-                               result_table_name,
-                               id_column,
-                               Agg_geom,
-                               Agg_Area
+                               result_table_name, id_column,
+                               Agg_geom, Agg_Area
                                )
   
 {
