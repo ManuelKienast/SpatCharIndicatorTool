@@ -485,7 +485,7 @@ calcTrafficTable <- function ( connection,
       a.gid,
       a.trips_d,
       b.trips_e,
-      a.trips_d+b.trips_e as total,
+      COALESCE(a.trips_d,0)+COALESCE(b.trips_e,0) as total,
       a.geom_grid
         FROM startingTrips a
           LEFT JOIN enteringTrips b
