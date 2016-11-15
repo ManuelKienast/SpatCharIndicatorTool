@@ -48,43 +48,47 @@ calcAreaRatio <- function( con,
 
   {
   
-  #creates a table intersecting the input data with aggregation cells
-  #erstellt eine Tabelle die die überschneiden Flächen von Landuse mit den Flächen der TVZ je TVZ ausgibt
-  
-  interSection <- dbGetQuery(con, sprintf(
-    
-    "DROP TABLE IF EXISTS %s_intersec;
-  
-    CREATE TABLE %s_intersec (
-      gid serial PRIMARY KEY,
-      aggr_unit integer,
-      use varchar(20));
-    
-    ALTER TABLE %s_intersec ADD COLUMN geom geometry (MultiPolygon, 25833);
-
-    INSERT INTO %s_intersec (
-      SELECT 
-        row_number() over (order by 1) as gid,
-        b.%s::numeric as aggr_unit,
-        a.%s as use,
-        ST_Multi(ST_Intersection(a.%s, b.%s))::geometry(MultiPolygon, 25833) as geom
-          FROM %s.%s AS a,
-               %s.%s AS b 
-      WHERE ST_Intersects(a.%s, b.%s) AND ST_isvalid(%s) = TRUE);
-      ",
-    resultTable_name,
-    resultTable_name,
-    resultTable_name,
-    resultTable_name,
-    grid_id,
-    ex_table_id,
-    ex_table_geom, grid_geom,
-    ex_table_schema, ex_table,
-    grid_schema, grid_table,
-    ex_table_geom, grid_geom, ex_table_geom
-    ))
-
-  
+  # #creates a table intersecting the input data with aggregation cells
+  # #erstellt eine Tabelle die die überschneiden Flächen von Landuse mit den Flächen der TVZ je TVZ ausgibt
+  # 
+  # interSection <- dbGetQuery(con, sprintf(
+  #   
+  #   "DROP TABLE IF EXISTS %s_intersec;
+  # 
+  #   CREATE TABLE %s_intersec (
+  #     gid serial PRIMARY KEY,
+  #     aggr_unit integer,
+  #     use varchar(20));
+  #   
+  #   ALTER TABLE %s_intersec ADD COLUMN geom geometry (MultiPolygon, 25833);
+  #   ALTER TABLE %s_intersec ADD COLUMN grid_geom geometry (Polygon, 25833);
+  # 
+  #   INSERT INTO %s_intersec (
+  #     SELECT 
+  #       row_number() over (order by 1) as gid,
+  #       b.%s::numeric as aggr_unit,
+  #       a.%s as use,
+  #       ST_Multi(ST_Intersection(a.%s, b.%s))::geometry(MultiPolygon, 25833) as geom,
+  #       b.%s AS grid_geom
+  #         FROM %s.%s AS a,
+  #              %s.%s AS b 
+  #     WHERE ST_Intersects(a.%s, b.%s) AND ST_isvalid(%s) = TRUE);
+  #     ",
+  #   resultTable_name,
+  #   resultTable_name,
+  #   resultTable_name,
+  #   resultTable_name,
+  #   resultTable_name,
+  #   grid_id,
+  #   ex_table_id,
+  #   ex_table_geom, grid_geom,
+  #   grid_geom,
+  #   ex_table_schema, ex_table,
+  #   grid_schema, grid_table,
+  #   ex_table_geom, grid_geom, ex_table_geom
+  #   ))
+  # 
+  # 
   #calculates the part of area per aggregation unit 
   #Berechnet den Fl?chenanteil pro landuse-Kategorie in jeder TVZ
    
@@ -100,21 +104,21 @@ calcAreaRatio <- function( con,
         a.use,
         round(sum(ST_AREA(a.geom))::numeric, 2) as area,
         round((100/ (ST_AREA(b.%s))*sum(ST_AREA(a.geom)))::numeric,2) as area_ratio,
-        b.%s
+        a.grid_geom
           FROM %s_intersec as a 
             LEFT JOIN %s.%s as b 
               ON a.aggr_unit = b.%s::numeric
       GROUP BY  a.aggr_unit,
                 a.use,
-                b.%s
-      ORDER BY a.aggr_unit)
-    ) as foo
+                b.%s,
+                a.grid_geom
+      ORDER BY a.aggr_unit
+      )as foo
       ;"
       ,
       
       resultTable_schema, resultTable_name,
       resultTable_schema, resultTable_name,
-      grid_geom,
       grid_geom,
       resultTable_name,
       grid_schema, grid_table,
