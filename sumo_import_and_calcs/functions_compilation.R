@@ -529,3 +529,5 @@ calcTraffic <- function( connection,
 #USAGE:
   # calcTraffic(con, "public", "sumotraffic_hex4000", "grids", "hex_4000", "the_geom", "public", "compiledimport")
   # test: for (i in grids)
+
+?lm()
