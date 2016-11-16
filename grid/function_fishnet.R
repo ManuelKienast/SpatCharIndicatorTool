@@ -63,10 +63,10 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
                                           xsize float8, ysize float8,
                                           x0 float8 DEFAULT 0, y0 float8 DEFAULT 0,
                                           OUT \"row\" integer, OUT col integer,
-                                          OUT geom geometry)
+                                          OUT the_geom geometry)
                                         RETURNS SETOF record AS
                                         $$
-                                        SELECT i + 1 AS row, j + 1 AS col, ST_Translate(cell, j * $3 + $5, i * $4 + $6) AS geom
+                                        SELECT i + 1 AS row, j + 1 AS col, ST_Translate(cell, j * $3 + $5, i * $4 + $6) AS the_geom
                                         FROM generate_series(0, $1 -1) AS i,
                                              generate_series(0, $2 -1) AS j,
                                         
@@ -84,8 +84,8 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
                                         ADD COLUMN gid serial PRIMARY KEY;
 
                                         ALTER TABLE %s
-                                        ALTER COLUMN geom TYPE geometry(Polygon, %s)
-                                        USING ST_SetSRID(geom, %s);"
+                                        ALTER COLUMN the_geom TYPE geometry(Polygon, %s)
+                                        USING ST_SetSRID(the_geom, %s);"
                                         , 
                                         nameS,
                                         h_layer, w_layer, x_cell, y_cell,
@@ -148,10 +148,10 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
 # xsize float8, ysize float8,
 # x0 float8 DEFAULT 0, y0 float8 DEFAULT 0,
 # OUT \"row\" integer, OUT col integer,
-# OUT geom geometry)
+# OUT the_geom geometry)
 # RETURNS SETOF record AS
 # $$
-# SELECT i + 1 AS row, j + 1 AS col, ST_Translate(cell, j * $3 + $5, i * $4 + $6) AS geom
+# SELECT i + 1 AS row, j + 1 AS col, ST_Translate(cell, j * $3 + $5, i * $4 + $6) AS the_geom
 # FROM generate_series(0, $1 -1) AS i,
 # generate_series(0, $2 -1) AS j,
 
@@ -162,13 +162,13 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
 # CREATE TABLE name AS
 # SELECT *
 # FROM ST_CreateFishnet(h_layer, w_layer, x_cell, y_cell, 
-# (SELECT ST_xmin(St_extent(geom)) FROM table),
-# (SELECT ST_ymin(St_extent(geom)) FROM table)) AS cells;
+# (SELECT ST_xmin(St_extent(the_geom)) FROM table),
+# (SELECT ST_ymin(St_extent(the_geom)) FROM table)) AS cells;
 
 # ALTER TABLE name
 # ADD COLUMN gid serial PRIMARY KEY;
 
 # ALTER TABLE name
-# ALTER COLUMN geom TYPE geometry(Polygon, get_SRID)
-# USING ST_SetSRID(geom, get_SRID);"
+# ALTER COLUMN the_geom TYPE geometry(Polygon, get_SRID)
+# USING ST_SetSRID(the_geom, get_SRID);"
 
