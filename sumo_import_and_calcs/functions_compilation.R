@@ -37,8 +37,10 @@ importPlainNodCSV <- function( connection,
       geom GEOMETRY (Point, %s));
     
     
-    COPY %s.%s (nodes_version, node_id, node_type, node_x, node_y)
-      FROM '%s' WITH CSV HEADER DELIMITER ';';
+    COPY %s.%s(
+      nodes_version, node_id, node_type, node_x, node_y)
+    FROM '%s'
+      WITH CSV HEADER DELIMITER ';';
     
     UPDATE %s.%s
       SET geom = ST_Transform(St_GeomFromText('Point ('|| %s.node_x ||' '|| %s.node_y || ')', 4326), %s);
@@ -47,9 +49,9 @@ importPlainNodCSV <- function( connection,
     ,
     importTables_schema, table_name_nod,    ## DROP TABLE
     importTables_schema, table_name_nod,    ## CREATE TABLE
-    set_CS2,                         ## "geom"
+    set_CS2,                                ## "geom"
     importTables_schema, table_name_nod,    ## COPY
-    filepath_nod,                    ## FROM
+    filepath_nod,                           ## FROM
     importTables_schema, table_name_nod,    ## COPY
     table_name_nod, table_name_nod, set_CS2 ## SET geom
   ))
@@ -112,9 +114,11 @@ importPlainEdgCSV <- function( connection,
       geom GEOMETRY (MultiLineString, %s));
     
     
-    COPY %s.%s (edges_version, edge_from, edge_id, edge_name, edge_numLanes, edge_priority, edge_shape, edge_speed,
-                edge_spreadType, edge_to, roundabout_edges, roundabout_nodes)
-      FROM '%s' WITH CSV HEADER DELIMITER ';';
+    COPY %s.%s(
+      edges_version, edge_from, edge_id, edge_name, edge_numLanes, edge_priority, edge_shape, edge_speed,
+      edge_spreadType, edge_to, roundabout_edges, roundabout_nodes)
+    FROM '%s'
+      WITH CSV HEADER DELIMITER ';';
     
     UPDATE %s.%s
       SET edge_shape = REPLACE(edge_shape, ' ', '#');
@@ -129,14 +133,14 @@ importPlainEdgCSV <- function( connection,
     ,
     importTables_schema, table_name_edg,    ## DROP TABLE
     importTables_schema, table_name_edg,    ## CREATE TABLE
-    set_CS2,                     ## "geom"
+    set_CS2,                                ## "geom"
     importTables_schema, table_name_edg,    ## COPY
-    filepath_edg,                    ## FROM
+    filepath_edg,                           ## FROM
     importTables_schema, table_name_edg,    ## UPDATE -1- 
     importTables_schema, table_name_edg,    ## UPDATE -2-
     importTables_schema, table_name_edg,    ## UPDATE -3-
     importTables_schema, table_name_edg,    ## UPDATE -4-
-    table_name_edg, set_CS2          ## SET geom
+    table_name_edg, set_CS2                 ## SET geom
     ))
 }
 
@@ -195,35 +199,37 @@ importAggregatedOneShotCSV <- function( connection,
     "
     DROP TABLE IF EXISTS %s.%s;
     CREATE TABLE %s.%s (
-    gid SERIAL PRIMARY Key,
-    interval_begin FLOAT,
-    interval_end FLOAT,
-    interval_id VARCHAR (20),
-    edge_arrived INTEGER,
-    edge_density FLOAT,
-    edge_departed INTEGER,
-    edge_entered INTEGER,
-    edge_id VARCHAR (75),
-    edge_laneChangedFrom INTEGER,
-    edge_laneChangedTo INTEGER,
-    edge_left INTEGER,
-    edge_occupancy FLOAT,
-    edge_sampledseconds FLOAT,
-    edge_speed FLOAT,
-    edge_travelTime FLOAT,
-    edge_waitingTime FLOAT);
+      gid SERIAL PRIMARY Key,
+      interval_begin FLOAT,
+      interval_end FLOAT,
+      interval_id VARCHAR (20),
+      edge_arrived INTEGER,
+      edge_density FLOAT,
+      edge_departed INTEGER,
+      edge_entered INTEGER,
+      edge_id VARCHAR (75),
+      edge_laneChangedFrom INTEGER,
+      edge_laneChangedTo INTEGER,
+      edge_left INTEGER,
+      edge_occupancy FLOAT,
+      edge_sampledseconds FLOAT,
+      edge_speed FLOAT,
+      edge_travelTime FLOAT,
+      edge_waitingTime FLOAT);
     
     
-    COPY %s.%s (interval_begin, interval_end, interval_id, edge_arrived, edge_density, edge_departed, edge_entered, edge_id, edge_laneChangedFrom,
-    edge_laneChangedTo, edge_left, edge_occupancy, edge_sampledseconds, edge_speed, edge_travelTime, edge_waitingTime)
-    FROM '%s' WITH CSV HEADER DELIMITER ';';
+    COPY %s.%s (
+      interval_begin, interval_end, interval_id, edge_arrived, edge_density, edge_departed, edge_entered, edge_id, edge_laneChangedFrom,
+      edge_laneChangedTo, edge_left, edge_occupancy, edge_sampledseconds, edge_speed, edge_travelTime, edge_waitingTime)
+    FROM '%s' 
+      WITH CSV HEADER DELIMITER ';';
     
     "
     ,
     importTables_schema, table_name_aggregated,    ## DROP TABLE
     importTables_schema, table_name_aggregated,    ## CREATE TABLE
     importTables_schema, table_name_aggregated,    ## COPY
-    filepath_aggregated                     ## FROM
+    filepath_aggregated                            ## FROM
     
   ))
 }
@@ -294,14 +300,15 @@ compile2Table <- function( connection,
         a.edge_entered,
         a.edge_left,
         e.edge_id,
+        e.edge_name,
         e.edge_to,
         e.edge_from,
         n.geom
-          FROM %s.%s AS a
-            LEFT JOIN %s.%s AS e
-              ON (a.edge_id = e.edge_id)
-            LEFT JOIN %s.%s As n
-              ON (e.edge_to = n.node_id)
+      FROM %s.%s AS a
+        LEFT JOIN %s.%s AS e
+          ON (a.edge_id = e.edge_id)
+        LEFT JOIN %s.%s As n
+          ON (e.edge_to = n.node_id)
       )as foo;
     
     ALTER TABLE %s.%s
@@ -317,7 +324,7 @@ compile2Table <- function( connection,
     importTables_schema, table_name_edg,           ## LEFT JOIN -1- as e
     importTables_schema, table_name_nod,           ## LEFT JOIN -2- as n
     importTables_schema, table_name_compiled,      ## ALTER ADD PKEY
-    table_name_compiled,                    ## CREATE INDEX
+    table_name_compiled,                           ## CREATE INDEX
     importTables_schema, table_name_compiled       ## INDEX ON
     
   ))
@@ -417,9 +424,9 @@ createSumoInterSectionTable <- function( connection,
         ci.geom as geom_point,
         r.%s as geom_grid,
         r.gid
-          FROM %s.%s AS ci 
-            JOIN %s.%s AS r 
-              ON ST_Within(ci.geom, r.%s) 
+      FROM %s.%s AS ci 
+        JOIN %s.%s AS r 
+          ON ST_Within(ci.geom, r.%s) 
       )as foo;
     
     
@@ -437,7 +444,7 @@ createSumoInterSectionTable <- function( connection,
     grid_schema, grid_name,               ###  JOIN
     grid_geom,                            ###  St_within
     resultTable_name,                     ###  DROP INDEX
-    resultTable_name, ###  CREATE INDEX
+    resultTable_name,                     ###  CREATE INDEX
     resultTable_schema, resultTable_name  ###  ON
   ))
   
@@ -467,7 +474,7 @@ calcTrafficTable <- function ( connection,
           sum(edge_departed) AS trips_d,
           gid,
           geom_grid
-            FROM %s.%s_intersect
+        FROM %s.%s_intersect
         GROUP BY gid,
                  geom_grid),
     
@@ -475,9 +482,9 @@ calcTrafficTable <- function ( connection,
         SELECT
           sum(a.edge_entered) AS trips_e,
           a.gid
-            FROM %s.%s_intersect a
-            LEFT JOIN %s.%s_intersect b
-              ON a.edge_from = b.edge_to
+        FROM %s.%s_intersect a
+          LEFT JOIN %s.%s_intersect b
+            ON a.edge_from = b.edge_to
         WHERE a.gid != b.gid AND a.interval_begin = b.interval_begin
         GROUP BY a.gid)
 
@@ -487,10 +494,10 @@ calcTrafficTable <- function ( connection,
       b.trips_e,
       COALESCE(a.trips_d,0)+COALESCE(b.trips_e,0) as total,
       a.geom_grid
-        FROM startingTrips a
-          LEFT JOIN enteringTrips b
-            ON a.gid = b.gid
-      )as foo
+    FROM startingTrips a
+      LEFT JOIN enteringTrips b
+        ON a.gid = b.gid
+    )as foo
     ;"
     ,
     resultTable_schema, resultTable_name,    ### DROP IF
@@ -530,4 +537,4 @@ calcTraffic <- function( connection,
   # calcTraffic(con, "public", "sumotraffic_hex4000", "grids", "hex_4000", "the_geom", "public", "compiledimport")
   # test: for (i in grids)
 
-?lm()
+
