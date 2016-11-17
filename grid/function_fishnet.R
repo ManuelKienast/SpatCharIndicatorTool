@@ -103,12 +103,12 @@ fishnet <- function(con, x_cell, y_cell, Agg_schema1, Agg_Area, Agg_geom, schema
 
 
 #fishnet(con, 500, 500, "urmo", "plr", "the_geom", "grids", "Fish_500")
-
+#fishnet(con, 500, 500, "urmo", "plr", "the_geom", "grids", "Fish500")
 #----------------------------------------------------------------------------------------------------------------------
 
 #Usage:
 
-# fishnet(con, 2000, 2000, "public", "tvz", "geom", "public", "fishnet")
+# fishnet(con, 2000, 2000, "urmo", "tvz", "the_geom", "public", "fish_2000")
 # 
 # 
 # 
