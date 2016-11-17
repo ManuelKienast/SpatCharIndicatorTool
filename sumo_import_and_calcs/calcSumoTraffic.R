@@ -29,7 +29,7 @@ library(RPostgreSQL)
 
 
 
-### simply run getAll2import once, followed by calcTraffic as often as you want to change the aggregation area
+### simply run getAll2import once, followed by calcTraffic as often as you want to change the aggregation area, i.e. the grid_% parameteres,
 ### or try the loop-build below for all the grids
 
 getAll2import( con,
