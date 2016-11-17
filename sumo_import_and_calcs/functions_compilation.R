@@ -11,8 +11,23 @@
       # 7- calcTrafficTable            - calculation of the the edge loadings per grid cell
       # 8- calcTraffic                 - aggregation of the above two functions (createSumoInterSectionTable, calcTrafficTable)
 
+###### PARAMETERS #################################
 
-
+#' @param connection                       A connection to the PostGIS database.
+#' @param importTables_schema     -String- the schema in teh db in which the tables are going to be written into (assumption is all tables will be written to the same schema)
+#' @param table_name_compiled     -String- the name of table in which all three-(node, edge, aggregateresult)-tables are compiled as one 
+#' @param table_name_nod          -String- the name given to the node table written into the db
+#' @param filepath_nod            -String- the file location of the node .csv file e.g. ("d:\\data\\sumoresults\\node.csv") please take note of "\\"
+#' @param table_name_edg          -String- the name given to the edge table written into the db
+#' @param filepath_edg            -String- the file location of the edge .csv file
+#' @param table_name_aggregated   -String- the name given to the aggregate table aka modeling results aka edge loading table written into the db
+#' @param filepath_aggregated     -String- the file location of the aggregate .csv file
+#' @param set_CS2                 -Integer- the EPSG-code of the coordinate system the geometries shall be transformed(projected) into
+#' @param resultTable_schema      -String- the schema in which the resutls table shall be written into the db
+#' @param resultTable_name        -String- the name given to the final results table, holding the No. of trips per grid-cell written into the db
+#' @param grid_schema             -String- the schema holding the grid tables in the db
+#' @param grid_name               -String- the name of the grid-table
+#' @param grid_geom               -String- the name of the geometry-column of the grid table
 
 
 ############################################################################################## 
