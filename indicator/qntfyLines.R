@@ -2,7 +2,7 @@
 ## First calculating the total length of line type per Aggregation area, write those to table
 ## secondly calculation of ratio of line Type against all selected line Types
 ## two sets of output columns: 1) the sum of lientype length per aggreagtion area, 2) the ratio of the length of the linetype in comparison
-## to the toatl length of all lines in the aggregation area
+##  to the total length of all lines in the aggregation area
 ##
 ## This script contains 6 helper funtions and one to rule them all, with brief explanations those are:
           
@@ -10,9 +10,9 @@
        #  2-  getVDist              - constructs the list of unique values identifying each line type in one specific column, e.g. osm_type
        #  3-  createResultTable     - sets up the resultTable with the iD and geom of the aggreagtionArea
        #  4-  updateTable           - for each element in the VDist-list adds a col to resultTable and computes the length of line in km
-       #  5-  sumLength             - writes tht total distance of all lines into the table (based on iteratively adding the length of each element of VDist)
-       #  6-  ratioLines2Table      - add a new column for each of VDist and computes its ratio [length(i)/length(total)]
-       #  7-  qntfyLines            - calls all previous functions and adds the necessary loops.
+       #  5-  sumLength             - writes the total length of all lines into the table (based on iteratively adding the length of each element of VDist)
+       #  6-  ratioLines2Table      - add a new column for each of VDist and compute its ratio [length(i)/length(total)]
+       #  7-  qntfyLines            - calls all previous functions, adding the necessary loops.
 ## 
 ## Currently, without editing, it is only possible to compute all values occuring in the selected type column.
 ## the best way to work around would be to write VDist by oneself and remove getVDist from qntyLines
