@@ -1,11 +1,89 @@
-﻿----
----- Third PROBLEM
-----
-----  Attach all the accessibilites from the corresponding table to the rentTable
--- i.e.	spat_char.accessibilities_tvz12
+﻿
+-- SQL script containing the solution to updating the rentbln11 table
+-- 1) adding KGS44 houshold data by spatial (nearest neighbour) joining to the rent table
+-- 2) inserting different income data form tvz_data_num to the table (this operation is also solved in R)
 
-ALTER TABLE public.rentbln11 DROP COLUMN test_col;
-ALTER TABLE public.rentbln11 ADD COLUMN test_col FLOAT;
+---- FIRST PROBLEM -- SOLVED
+----
+----  The nearest neighbour problem
+-- insert KGS44. hh | gc_class | bj_class  into mietobjekte (rentbln11)
+--- update mietobjekte mit den drei Objekte s.o.
+
+ALTER TABLE rentbln11
+ ADD COLUMN Gbgröße FLOAT,
+ ADD COLUMN Gbchar INTEGER,
+ ADD COLUMN Bjahr INTEGER,
+ ADD PRIMARY KEY (id);
+
+--ALTER  TABLE rentbln11 DROP CONSTRAINT rentbln11_pkey;
+--ALTER  TABLE rentbln11 DROP COLUMN baujahr_kgs44;
+
+-- ALl in One
+
+UPDATE rentbln11
+SET Gbgröße = foo.hh,
+    Gbchar = foo.gc_class,
+    BJahr = foo.bj_class
+FROM (
+	WITH IDTABLE AS (        ---- idtable creates the relation btwn the id of rentobject and its spatially closest kgs44 counter-part, basically the link btwn both tables
+		SELECT
+			r.id,
+			(SELECT  ---- this select returns the k.gid of the point (k.the_geom) in closest proximity (limit1) to the point defined by r.geom
+				k.gid
+			FROM urmo.kgs44 AS k
+			ORDER BY r.geom <#> k.the_geom
+			LIMIT 1)
+		FROM rentbln11 r)
+	SELECT                   ---- selection of the information to update the cols with and the id to control the update set with
+		r.id,	
+		k.hh AS hh,
+		k.gc_class AS gc_class,
+		k.bj_class AS bj_class
+	FROM rentbln11 AS r
+		LEFT JOIN IDTABLE AS i
+			ON r.id = i.id
+		LEFT JOIN urmo.KGS44 AS k
+			ON i.gid = k.gid) as foo
+	WHERE rentbln11.id = foo.id
+	;
+
+
+--- Same as above but split in two parts: 1) creation of a values table 2) copying from that into the rent-table.
+--- Create table with the mietobject id and the kgs44 values necessary if these values are supposed to be added via the big "building rentTable"-script
+
+CREATE TABLE rentbln11_1 AS
+	WITH IDTABLE AS (
+		SELECT
+			r.id,
+			(SELECT
+				k.gid
+			FROM urmo.kgs44 AS k
+			ORDER BY r.geom <#> k.the_geom
+			LIMIT 1)
+		FROM rentbln11 r)
+	SELECT 
+		r.id,	
+		k.hh AS hh,
+		k.gc_class AS gc_class,
+		k.bj_class AS bj_class
+	FROM rentbln11 AS r
+		LEFT JOIN IDTABLE AS i
+			ON r.id = i.id
+		LEFT JOIN urmo.KGS44 AS k
+			ON i.gid = k.gid
+
+ALTER TABLE rentbln11_1	ADD PRIMARY KEY (id);
+	
+--- Insert the values from temp table into the rentbln11 table
+UPDATE rentbln11
+	SET 	Gbgröße = t.hh,
+		Gbchar = t.gc_class,
+		BJahr = t.bj_class
+	FROM rntbln11_1 as t
+	WHERE rentbln11.id = t.id;
+-- done, or all in one below
+
+
 
 ----
 ---- SECOND PROBLEM  -- solved & working
@@ -48,91 +126,6 @@ SET inc1 = t.hh_ek1,
 	fun_dens = t.fun_dens
 FROM spat_char.tvz_data_num AS t
 where rentbln11.tvz_id = t.tvz_id::integer;
-
-
-
-
-----
----- FIRST PROBLEM -- SOLVED
-----
-----  The nearest neighbour problem
--- insert KGS44. hh | gc_class | bj_class  into mietobjekte (rentbln11)
---- update mietobjekte mit den drei Objekte s.o.
-
-ALTER TABLE rentbln11
- ADD COLUMN Gbgröße FLOAT,
- ADD COLUMN Gbchar INTEGER,
- ADD COLUMN Bjahr INTEGER,
- ADD PRIMARY KEY (id);
-
---ALTER  TABLE rentbln11 DROP CONSTRAINT rentbln11_pkey;
---ALTER  TABLE rentbln11 DROP COLUMN baujahr_kgs44;
-
-
---- Create table with the mietobject id and the kgs44 values necessary if these values are supposed to be added via the big "building rentTable"-script
-
-CREATE TABLE rentbln11_1 AS
-	WITH IDTABLE AS (
-		SELECT
-			r.id,
-			(SELECT
-				k.gid
-			FROM urmo.kgs44 AS k
-			ORDER BY r.geom <#> k.the_geom
-			LIMIT 1)
-		FROM rentbln11 r)
-	SELECT 
-		r.id,	
-		k.hh AS hh,
-		k.gc_class AS gc_class,
-		k.bj_class AS bj_class
-	FROM rentbln11 AS r
-		LEFT JOIN IDTABLE AS i
-			ON r.id = i.id
-		LEFT JOIN urmo.KGS44 AS k
-			ON i.gid = k.gid
-
-ALTER TABLE rentbln11_1	ADD PRIMARY KEY (id);
-	
---- Insert the values from temp table into the rentbln11 table
-UPDATE rentbln11
-	SET 	Gbgröße = t.hh,
-		Gbchar = t.gc_class,
-		BJahr = t.bj_class
-	FROM rntbln11_1 as t
-	WHERE rentbln11.id = t.id;
--- done, or all in one below
-
-----
----- Or without writing the additional table:
-UPDATE rentbln11
-SET Gbgröße = foo.hh,
-    Gbchar = foo.gc_class,
-    BJahr = foo.bj_class
-FROM (
-	WITH IDTABLE AS (        ---- idtable creates the relation btwn the id of rentobject and its spatially closest kgs44 counter-part, basically the link btwn both tables
-		SELECT
-			r.id,
-			(SELECT  ---- this select returns the k.gid of the point (k.the_geom) in closest proximity (limit1) to the point defined by r.geom
-				k.gid
-			FROM urmo.kgs44 AS k
-			ORDER BY r.geom <#> k.the_geom
-			LIMIT 1)
-		FROM rentbln11 r)
-	SELECT                   ---- selection of the information to update the cols with and the id to control the update set with
-		r.id,	
-		k.hh AS hh,
-		k.gc_class AS gc_class,
-		k.bj_class AS bj_class
-	FROM rentbln11 AS r
-		LEFT JOIN IDTABLE AS i
-			ON r.id = i.id
-		LEFT JOIN urmo.KGS44 AS k
-			ON i.gid = k.gid) as foo
-	WHERE rentbln11.id = foo.id
-	;
-
-
 
 
 
