@@ -3,19 +3,20 @@
 
 
 
-#' Spatial Indicator for a proportion of areas.
-#' Builds a proportion of areas of a selected category per aggregation cell.
-#' Note, that splitted areas will be kept and calculated to the aggregation unit it intersects with. 
+#' calculates the proportion of landuse in the examination_areas by summation of all areas belonging to the same category
+#' and division by the total area of the gridd-cell
+#' Note, that split areas will be kept and calculated to the aggregation unit it intersects with. 
 #' 
-#' @param con            A connection to the PostGIS database.
-#' @param ex_table_schema         A string: the name of the scheme in the database, in which the tables are included.
-#' @param ex_table          A string: the name of the table in the PostGIS database containing the geometry you want to know the ratio.
-#' @param ex_table_id       A string: the name of the column of the categories.
-#' @param grid_table    A string: the name of the table in the PostGIS database containing the aggregation units.
-#' @param grid_id        A string: the name of the identifier of the aggregation units.
-#' @param intersec_table_name   A string: the name of the new table containing the intersected areas.
-#' 
-#' @return area A        data.frame containing the aggretaion units, their categories (use), the area of that category and the proportion of that area to the area of the aggregation unit in percent. 
+#' @param con                A con       connection to the PostGIS database.
+#' @param ex_table_schema    A string    the name of the scheme in the database, in which the tables are included
+#' @param ex_table           A string    the name of the table in the PostGIS database containing the geometry you want to know the ratio of
+#' @param ex_table_id        A string    the name of the id column of the ex_table with the landuse-categories
+#' @param ex_table_geom      A string    the name of the geometry column of the examination table
+#' @param grid_table         A string    the name of the table in the PostGIS database containing the aggregation units
+#' @param grid_id            A string    the column with unique identifier of the aggregation units
+#' @param grid_geom          A string    the column holding the geometries of the grid
+#' @param resultTable_schema A string    the name of the schema the resutlTable is to be written into
+#' @param resultTable_name   A string    the name of the resultTable whcih is going ot be created by this func
 #' 
 #' @examples 
 #' areaRatio(con, "public", "landuse", "landuse", "TVZ", "VBZ_NO")
@@ -131,33 +132,19 @@ calcAreaRatio <- function( con,
     
  } 
 
-
-calcAreaRatio( con, 
-               ex_table_schema = "urmo", ex_table= "fls", ex_table_id = "os_id", ex_table_geom = "the_geom",
-               grid_schema = "grids", grid_table = "fish_4000", grid_id = "gid", grid_geom = "the_geom",
-               resultTable_schema = "public", resultTable_name = "a_test_landuseRatio_II"
-               )
-
-
-
-
-
-ratio(con,
-      "public", "a_test_landuseratio",
-      "the_geom", "grids", "fish_4000", "gid")
-
 #----------------------------------------------------------------------------------------------------------------------
-
 #Usage:
 
-#calcAreaRatio(con, "public", "landuse", "landuse", "public", "tvz", "vbz_no", "public", "arearatio")
+# ##calcAreaRatio( con, 
+#                ex_table_schema = "urmo", ex_table= "fls", ex_table_id = "os_id", ex_table_geom = "the_geom",
+#                grid_schema = "grids", grid_table = "fish_4000", grid_id = "gid", grid_geom = "the_geom",
+#                resultTable_schema = "public", resultTable_name = "a_test_landuseRatio_II"
+#                )
 
-#calcAreaRatio(con, ex_table = "landuse", ex_table_id = "landuse", grid_table = "vkz", grid_id = "visum_no", resultTable_name = "arearatio")
-
-#calcAreaRatio(con, "public", ex_table = "landuse", ex_table_id = "landuse",  grid_table = "rbs_od_blk_2015_mitte", grid_id = "blk", resultTable_name = "arearatio")
-
-### testcase: 
-
+# ratio(con,
+#       "public", "a_test_landuseratio",
+#       "the_geom", "grids", "fish_4000", "gid")
+#
 # #-----------------------------------------------------------------------------------------------------------------------
 # 
 # #disconnect DB Connection
