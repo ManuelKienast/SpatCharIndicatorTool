@@ -72,44 +72,44 @@ insertPop2table <- function(con, vektorColNames,
                             ex_table2_schema, ex_table2, ex_table2_col,ex_table2_geom)
 {
   popPerCell <- dbGetQuery(con, sprintf( 
-    
-    "UPDATE %s 
+    "
+    UPDATE %s 
       SET %s = foo.%s
         FROM (
 
-With hhPerBlk AS (
+    With hhPerBlk AS (
 	    SELECT
         p.%s AS blk_id,
         sum(%s) AS hhPerBlk
-          FROM %s.%s k
-            JOIN %s.%s p
-              ON ST_Within(k.%s, p.%s)
-    GROUP by p.blk_id),
+      FROM %s.%s k
+        JOIN %s.%s p
+          ON ST_Within(k.%s, p.%s)
+      GROUP by p.blk_id),
     
-  popPerHh AS (
+    popPerHh AS (
+      SELECT 
+        p.%s / h.hhPerBlk AS popPerHh,
+        p.%s AS blk_id
+      FROM %s.%s AS p
+        LEFT JOIN hhPerBlk as h
+          ON p.blk_id = h.blk_id
+      WHERE h.hhPerBlk >0
+      GROUP BY  p.blk_id,
+                p.%s,
+                h.hhPerBlk)
     SELECT 
-      p.%s / h.hhPerBlk AS popPerHh,
-      p.%s AS blk_id
-        FROM %s.%s AS p
-          LEFT JOIN hhPerBlk as h
-            ON p.blk_id = h.blk_id
-          WHERE h.hhPerBlk >0
-    GROUP BY p.blk_id, p.%s, h.hhPerBlk)
-    
-  SELECT 
-    sum(k.%s*popPerHh) as %s,
-    g.%s
-      FROM %s.%s g
-        JOIN %s.%s k
-          ON ST_Within(k.%s, g.%s)
-        LEFT JOIN %s.%s p 
-          ON ST_Within (k.%s, p.%s)
-        LEFT JOIN popPerHh as pop
-          ON p.%s = pop.blk_id
+      sum(k.%s*popPerHh) as %s,
+      g.%s
+    FROM %s.%s g
+      JOIN %s.%s k
+        ON ST_Within(k.%s, g.%s)
+      LEFT JOIN %s.%s p 
+        ON ST_Within (k.%s, p.%s)
+      LEFT JOIN popPerHh as pop
+        ON p.%s = pop.blk_id
     GROUP BY g.%s
-  ) as foo
-  WHERE %s.%s = foo.%s
-
+      ) as foo
+    WHERE %s.%s = foo.%s
     ;"
     ,
     result_table_name,                 ## UPDATE
@@ -124,14 +124,14 @@ With hhPerBlk AS (
     ex_table1_schema, ex_table1,       ## FROM  p
     vektorColNames,                    ## GROUP BY
     ex_table2_col, vektorColNames,     ## SELECT1 - hh, Colnames
-    result_table_id,                            ## SELECT2 - g - grid
+    result_table_id,                   ## SELECT2 - g - grid
     result_table_schema,result_table_name,  ## FROM g
     ex_table2_schema, ex_table2,       ## JOIN k  kgs44
     ex_table2_geom, result_table_geom, ## ON ST_Within -1- (points form kgs in area of result geom - grids)
     ex_table1_schema, ex_table1,       ## LEFT JOIN p
     ex_table2_geom, ex_table1_geom,    ## ON ST_Within -2- (points form kgs in area of population cell aka pop_blk)
     ex_table1_id,                      ## ON -3- p.
-    result_table_id,                            ## GROUP BY
+    result_table_id,                   ## GROUP BY
     result_table_name, result_table_id, result_table_id  ## WHERE
     
   ))
