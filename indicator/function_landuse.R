@@ -48,49 +48,49 @@ calcAreaRatio <- function( con,
 
   {
   
-  # #creates a table intersecting the input data with aggregation cells
-  # #erstellt eine Tabelle die die überschneiden Flächen von Landuse mit den Flächen der TVZ je TVZ ausgibt
-  # 
-  # interSection <- dbGetQuery(con, sprintf(
-  #   
-  #   "DROP TABLE IF EXISTS %s_intersec;
-  # 
-  #   CREATE TABLE %s_intersec (
-  #     gid serial PRIMARY KEY,
-  #     aggr_unit integer,
-  #     use varchar(20));
-  #   
-  #   ALTER TABLE %s_intersec ADD COLUMN geom geometry (MultiPolygon, 25833);
-  #   ALTER TABLE %s_intersec ADD COLUMN grid_geom geometry (Polygon, 25833);
-  # 
-  #   INSERT INTO %s_intersec (
-  #     SELECT 
-  #       row_number() over (order by 1) as gid,
-  #       b.%s::numeric as aggr_unit,
-  #       a.%s as use,
-  #       ST_Multi(ST_Intersection(a.%s, b.%s))::geometry(MultiPolygon, 25833) as geom,
-  #       b.%s AS grid_geom
-  #         FROM %s.%s AS a,
-  #              %s.%s AS b 
-  #     WHERE ST_Intersects(a.%s, b.%s) AND ST_isvalid(%s) = TRUE);
-  #     ",
-  #   resultTable_name,
-  #   resultTable_name,
-  #   resultTable_name,
-  #   resultTable_name,
-  #   resultTable_name,
-  #   grid_id,
-  #   ex_table_id,
-  #   ex_table_geom, grid_geom,
-  #   grid_geom,
-  #   ex_table_schema, ex_table,
-  #   grid_schema, grid_table,
-  #   ex_table_geom, grid_geom, ex_table_geom
-  #   ))
-  # 
-  # 
-  #calculates the part of area per aggregation unit 
-  #Berechnet den Fl?chenanteil pro landuse-Kategorie in jeder TVZ
+  #creates a table intersecting the input data with aggregation cells
+  #erstellt eine Tabelle die die überschneiden Flächen von Landuse mit den Flächen der TVZ je TVZ ausgibt
+
+  interSection <- dbGetQuery(con, sprintf(
+
+    "DROP TABLE IF EXISTS %s_intersec;
+
+    CREATE TABLE %s_intersec (
+      gid serial PRIMARY KEY,
+      aggr_unit integer,
+      use varchar(20));
+
+    ALTER TABLE %s_intersec ADD COLUMN geom geometry (MultiPolygon, 25833);
+    ALTER TABLE %s_intersec ADD COLUMN grid_geom geometry (Polygon, 25833);
+
+    INSERT INTO %s_intersec (
+      SELECT
+        row_number() over (order by 1) as gid,
+        b.%s::numeric as aggr_unit,
+        a.%s as use,
+        ST_Multi(ST_Intersection(a.%s, b.%s))::geometry(MultiPolygon, 25833) as geom,
+        b.%s AS grid_geom
+          FROM %s.%s AS a,
+               %s.%s AS b
+      WHERE ST_Intersects(a.%s, b.%s) AND ST_isvalid(a.%s) = TRUE);
+      ",
+    resultTable_name,
+    resultTable_name,
+    resultTable_name,
+    resultTable_name,
+    resultTable_name,
+    grid_id,
+    ex_table_id,
+    ex_table_geom, grid_geom,
+    grid_geom,
+    ex_table_schema, ex_table,
+    grid_schema, grid_table,
+    ex_table_geom, grid_geom, ex_table_geom
+    ))
+
+
+  ## calculates the part of area per aggregation unit
+  ## Berechnet den Flächenanteil pro landuse-Kategorie in jeder TVZ
    
   ratio <- dbGetQuery(con, sprintf(
     
@@ -134,25 +134,17 @@ calcAreaRatio <- function( con,
 
 calcAreaRatio( con, 
                ex_table_schema = "urmo", ex_table= "fls", ex_table_id = "os_id", ex_table_geom = "the_geom",
-               grid_schema = "grids", grid_table = "fish_4000", grid_id = "gid", grid_geom = "geom",
-               resultTable_schema = "public", resultTable_name = "a_test_landuseRatio"
+               grid_schema = "grids", grid_table = "fish_4000", grid_id = "gid", grid_geom = "the_geom",
+               resultTable_schema = "public", resultTable_name = "a_test_landuseRatio_II"
                )
 
 
 
 
 
-
-ratio <- function( con,
-                   resultTable_schema, resultTable_name,
-                   grid_geom, grid_schema, grid_table, grid_id
-)
-  
-{
-
 ratio(con,
-      "public", resultTable_name,
-      grid_geom, grid_schema, grid_table, grid_id)
+      "public", "a_test_landuseratio",
+      "the_geom", "grids", "fish_4000", "gid")
 
 #----------------------------------------------------------------------------------------------------------------------
 
