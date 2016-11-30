@@ -149,7 +149,8 @@ createResultTable <- function(  connection,
  }
  
 
-
+# USAGE:
+## createResultTable( con, "public", "rent_asl_tvz", "code", "geom", "urmo.tvz12")
 
   
 ############################################################################################## 

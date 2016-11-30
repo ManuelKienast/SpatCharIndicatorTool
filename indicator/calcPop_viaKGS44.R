@@ -40,26 +40,31 @@ getColNames <- function (con, ex_table1_schema, ex_table1)
 ## UPDATE TABLE (created with qntfyLines() Function) and ADD COLUMNS  with the populations for each Cell of the chosen Aggregation Area
 ##
 
-updateTableWithColNames <- function (con, result_table_name, vektorColNames)
+updateTableWithColNames <- function (con, result_table_schema, result_table_name, vektorColNames)
 
   {
   newColNames <- dbGetQuery(con, sprintf( 
     
-    "ALTER TABLE %s DROP COLUMN IF EXISTS %s;
-    ALTER TABLE %s ADD COLUMN %s FLOAT;
+    "--ALTER TABLE %s.%s DROP COLUMN IF EXISTS %s;
+    ALTER TABLE %s.%s ADD COLUMN %s FLOAT;
     "
     ,
-    result_table_name, vektorColNames,
-    result_table_name, vektorColNames
+    result_table_schema, result_table_name, vektorColNames,
+    result_table_schema, result_table_name, vektorColNames
     
   ))
   return(newColNames)
 }
 
+#USAGE:
+## updateTableWithColNames (con, "public", "rent_asl_tvz", "pop_tot")
+
 ##
 ## WRITE the population Informatino into the Table updated with the new Col names
-## Variables are: ex_table1 -> the pop_blk, ex_table2 -> the householdData from KGS44 and
-## agg_table -> the reaggreagtion to the results (aka-Grid) table
+## Variables are: 
+# ex_table1 -> the pop_blk, 
+# ex_table2 -> the householdData from KGS44 and
+# agg_table -> the reaggreagtion to the results (aka-Grid) table
 ## Calc is 
 ## pop2hh: division of the total population in each ex_table1 Cell by the sum of all households from ex_table2in each Cell of ex_table1
 ## hhPerGrid: A selection of all hh present per each cell of the agg_table
@@ -73,7 +78,7 @@ insertPop2table <- function(con, vektorColNames,
 {
   popPerCell <- dbGetQuery(con, sprintf( 
     "
-    UPDATE %s 
+    UPDATE %s.%s 
       SET %s = foo.%s
         FROM (
 
@@ -84,7 +89,7 @@ insertPop2table <- function(con, vektorColNames,
       FROM %s.%s k
         JOIN %s.%s p
           ON ST_Within(k.%s, p.%s)
-      GROUP by p.blk_id),
+      GROUP by p.%s),
     
     popPerHh AS (
       SELECT 
@@ -92,9 +97,9 @@ insertPop2table <- function(con, vektorColNames,
         p.%s AS blk_id
       FROM %s.%s AS p
         LEFT JOIN hhPerBlk as h
-          ON p.blk_id = h.blk_id
+          ON p.%s = h.blk_id
       WHERE h.hhPerBlk >0
-      GROUP BY  p.blk_id,
+      GROUP BY  p.%s,
                 p.%s,
                 h.hhPerBlk)
     SELECT 
@@ -112,17 +117,23 @@ insertPop2table <- function(con, vektorColNames,
     WHERE %s.%s = foo.%s
     ;"
     ,
-    result_table_name,                 ## UPDATE
+    result_table_schema, result_table_name, ## UPDATE
     vektorColNames, vektorColNames,    ## SET 
+    
     ex_table1_id,                      ## SELECT 1 p.
     ex_table2_col,                     ## sum - hh
     ex_table2_schema, ex_table2,       ## FROM k  kgs44
     ex_table1_schema, ex_table1,       ## JOIN  p
-    ex_table2_geom, ex_table1_geom,    ## ST_Within (points from kgs in area of population cell aka pop_blk)
+    ex_table2_geom, ex_table1_geom,    ## ON ST_Within (points from kgs in area of population cell aka pop_blk)
+    ex_table1_id,                      ## GROUP BY block_id
+    
     vektorColNames,                    ## SELECT 1 division
     ex_table1_id,                      ## SELECT 1 p.
     ex_table1_schema, ex_table1,       ## FROM  p
-    vektorColNames,                    ## GROUP BY
+    ex_table1_id,                      ## LEFT JOIN ON
+    ex_table1_id,                      ## GROUP BY -1-
+    vektorColNames,                    ## GROUP BY -2-
+    
     ex_table2_col, vektorColNames,     ## SELECT1 - hh, Colnames
     result_table_id,                   ## SELECT2 - g - grid
     result_table_schema,result_table_name,  ## FROM g
@@ -140,6 +151,14 @@ insertPop2table <- function(con, vektorColNames,
   
 }
 
+
+#USAGE: 
+# insertPop2table( con, "pop_tot", 
+#                  "public", "rent_asl_tvz", "agg_id", "geom", 
+#                  "public", "pop_plr_join", "plr_id", "the_geom",
+#                  "urmo", "kgs44", "hh", "the_geom")
+
+
 ##
 ## FINAL Function, calling everything and looping where appropriate
 ##
@@ -152,7 +171,7 @@ calcPop2Cell <- function(con,
 {
   vektorColNames <- getColNames (con, ex_table1_schema, ex_table1)
 
-  for (i in vektorColNames) updateTableWithColNames(con, "result_bike_hex_2000", i)
+  for (i in vektorColNames) updateTableWithColNames(con, result_table_schema, result_table_name, i)
 
   for (i in vektorColNames) insertPop2table(con, i,
                                   result_table_schema, result_table_name, result_table_id, result_table_geom,
