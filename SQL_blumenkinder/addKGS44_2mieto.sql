@@ -131,6 +131,113 @@ where rentbln11.tvz_id = t.tvz_id::integer;
 
 
 ------------ PLAYGROUND   --------------------------------------------
+---- test for distance between the nearest neighbours
+drop table rentbln_dist_test;
+SELECT * INTO rentbln_dist_test FROM (
+WITH IDTABLE AS (        ---- idtable creates the relation btwn the id of rentobject and its spatially closest kgs44 counter-part, basically the link btwn both tables
+		SELECT
+			r.id,
+			(SELECT  ---- this select returns the k.gid of the point (k.the_geom) in closest proximity (limit1) to the point defined by r.geom
+				k.gid
+			FROM urmo.kgs44 AS k
+			ORDER BY r.geom <#> k.the_geom
+			LIMIT 1)
+		FROM rentbln11 r)
+	SELECT 
+		r.id, k.gid, st_distance(r.geom, k.the_geom) as dist, r.geom
+		FROM rentbln11 as r
+			LEFT JOIN idtable AS id
+				ON (r.id = id.id)
+			LEFT JOIN urmo.kgs44 as k
+				ON (id.gid = k.gid)
+						)as foo;
+
+
+---- write the table containing only values where distance btwn geoms is <18m
+drop table rentbln_18m;
+SELECT * INTO rentbln_18m FROM (
+WITH IDTABLE AS (        ---- idtable creates the relation btwn the id of rentobject and its spatially closest kgs44 counter-part, basically the link btwn both tables
+		SELECT
+			r.id,
+			(SELECT  ---- this select returns the k.gid of the point (k.the_geom) in closest proximity (limit1) to the point defined by r.geom
+				k.gid
+			FROM urmo.kgs44 AS k
+			ORDER BY r.geom <#> k.the_geom
+			LIMIT 1)
+		FROM rentbln11 r)
+	SELECT 
+		st_distance(r.geom, k.the_geom) as dist, r.*
+		FROM rentbln11 as r
+			LEFT JOIN idtable AS id
+				ON (r.id = id.id)
+			LEFT JOIN urmo.kgs44 as k
+				ON (id.gid = k.gid)
+		WHERE st_distance(r.geom, k.the_geom) < 18
+				)as foo;
+
+
+select *
+from rentbln_18m
+where dist > 18
+order by dist desc;
+
+
+select * from rentbln_18m limit 1
+---------------------
+--------------
+---- Test for returning/consecutive postings identified by laufzeitta and einstellda and the same qmmiete and etage
+-- query for einstellda and sameness
+select qmmiete, einstellda, laufzeitta, einstellda + laufzeitta::integer as expectedNewEinst
+from rentbln11
+where qmmiete::text LIKE ('16.9014%')
+ORDER BY einstellda
+
+
+-- transfer this to a self join where dates are same, i.e. a.einstellda = b.einstellda+laufzeit AND qmmiete AND etage; select gid, resutl should list all the consecutively listed objects
+-- 22633 rows returned.
+select a.id, b.id, a.strasse, b.strasse, a.qmmiete, b.qmmiete, a.etage, b.etage, a.mietekalt, b.mietekalt, a.einstellda, b.einstellda+b.laufzeitta::integer, a.laufzeitta
+FROM rentbln_18m as a
+	JOIN rentbln_18m as b
+		ON a.einstellda = (b.einstellda + b.laufzeitta::integer)
+		WHERE a.qmmiete = b.qmmiete AND a.etage = b.etage AND a.strasse = b.strasse AND a.mietekalt = b.mietekalt
+ORDER by a.id
+
+* INTO rentbln_18m_dl
+-- select only those values into the new table WHERE id IS NOT = b.id, i.e. with "double listings" (_dl) removed
+SELECT * FROM (
+WITH IDdoubleListing AS (        
+		select 
+			a.id as aid, b.id as bid, a.strasse, b.strasse, a.qmmiete, b.qmmiete, a.etage, b.etage, a.mietekalt, b.mietekalt, a.einstellda, b.einstellda+b.laufzeitta::integer, a.laufzeitta
+		FROM rentbln_18m as a
+			JOIN rentbln_18m as b
+				ON a.einstellda = (b.einstellda + b.laufzeitta::integer)
+		WHERE a.qmmiete = b.qmmiete AND a.etage = b.etage AND a.strasse = b.strasse AND a.mietekalt = b.mietekalt)
+	SELECT 
+		r.*
+		FROM rentbln_18m as r
+			LEFT JOIN iddoublelisting AS id
+				ON (r.id = id.aid)
+
+		order by r.id
+				)as foo;
+
+WHERE id.bid IS NULL
+
+-- --- test
+-- ----- check the same as above BUT inside a date range of +2 -2 of einstell date and connect on strasse
+-- -- no idea how to get it to run
+-- select a.id, b.id, a.strasse, b.strasse, a.qmmiete, b.qmmiete, a.etage, b.etage, a.mietekalt, b.mietekalt, a.einstellda, b.einstellda+b.laufzeitta::integer
+-- FROM rentbln11 as a
+-- 	JOIN rentbln11 as b
+-- 		ON a.strasse = b.strasse 
+-- 		WHERE a.qmmiete = b.qmmiete 
+-- 		AND a.etage = b.etage 
+-- 		AND a.mietekalt = b.mietekalt 
+-- 		AND a.einstellda::timestamp <@ '[((b.einstellda+(b.laufzeitta-2))::timestamp), ((b.einstellda+(b.laufzeitta+2))::timestamp)]'::tsrange
+-- ORDER by a.id
+
+
+
 ---- matches the mietobjekte to its closest kgs44 point  -- http://geeohspatial.blogspot.de/2013/05/k-nearest-neighbor-search-in-postgis.html
 -- SELECT
 -- 	r.id,
