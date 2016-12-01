@@ -1,12 +1,14 @@
 ## Function for qunatification of Line Types
-## First calculating the total length of line type per Aggregation area, write those to table
-## secondly calculation of ratio of line Type against all selected line Types
-## two sets of output columns: 1) the sum of lientype length per aggreagtion area, 2) the ratio of the length of the linetype in comparison
-##  to the total length of all lines in the aggregation area
-##
+## First: calculation of the total length of each line type per Aggregation area & writing of those to the resutl_table_name
+## Second: calculation of the ratio of the length of each line Type against the combined length of all selected line Types
+## Output: two sets of columns: 
+##        1) the sum of the length of each linetype per aggreagtion/grid area, 
+##        2) the ratio of the length of sum of each linetype in comparison to the total length of all lines in the aggregation area
+
+
 ## This script contains 6 helper funtions and one to rule them all, with brief explanations those are:
           
-       #  1-  createInterSecTable   - writes the intersection table between the lineNetWork and the aggregationArea, e.g. TVZ|PLR|Grid
+       #  1-  createInterSecTable   - writes the intersection table between the lineNetWork(edge_table_name) and the aggregationArea(grid_name), e.g. TVZ|PLR|Grid
        #  2-  getVDist              - constructs the list of unique values identifying each line type in one specific column, e.g. osm_type
        #  3-  createResultTable     - sets up the resultTable with the iD and geom of the aggreagtionArea
        #  4-  updateTable           - for each element in the VDist-list adds a col to resultTable and computes the length of line in km
@@ -16,6 +18,20 @@
 ## 
 ## Currently, without editing, it is only possible to compute all values occuring in the selected type column.
 ## the best way to work around would be to write VDist by oneself and remove getVDist from qntyLines
+
+
+###### PARAMETERS #################################
+
+#' @param connection             A connection to the PostGIS database.
+#' @param result_table_schema    -String- the schema of the table in which the results are written, will be created
+#' @param result_table_name      -String- the name of the table in which the results are written, will be created
+#' @param edge_table_name        -String- the name of the table containing the edge/line-geoms; if other then public-schema: table_name --> schema.table_name
+#' @param edge_type_col          -String- the column which defines the line/edge - types, e.g. osm_type
+#' @param edge_geom              -String- the column holding the geometries of the edges/lines
+#' @param grid_name              -String- the name of the grid/aggregation table, e.g. fish_2000 / TVZ, if not in public. the schema needs to be specified, i.e. schema.grid_name
+#' @param grid_id                -String- the column with the unique grid-cell id
+#' @param grid_geom              -String- the column holding the geometries of the edges/lines
+
 
 library(RPostgreSQL)
 library(rgdal)
