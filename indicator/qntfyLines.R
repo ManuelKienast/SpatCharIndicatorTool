@@ -30,7 +30,7 @@
 #' @param edge_geom              -String- the column holding the geometries of the edges/lines
 #' @param grid_name              -String- the name of the grid/aggregation table, e.g. fish_2000 / TVZ, if not in public. the schema needs to be specified, i.e. schema.grid_name
 #' @param grid_id                -String- the column with the unique grid-cell id
-#' @param grid_geom              -String- the column holding the geometries of the edges/lines
+#' @param grid_geom              -String- the column holding the grid geometries
 
 
 library(RPostgreSQL)
