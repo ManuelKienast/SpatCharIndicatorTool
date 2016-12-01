@@ -90,3 +90,22 @@ copyCol <- function ( con,
 # copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
 #           "a.pop_ausl/a.pop_tot", "prop_migr", "FLOAT",
 #           "public", "rent_asl_tvz", "agg_id::int")
+
+##
+#### USAGE -6  adding UrMoAC output file to aggregate table
+##
+# # a) paste the tvz gid, the foreign key for the UrMoAc output
+# copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
+#           "a.gid", "tvz_gid", "Int",
+#           "urmo", "tvz12", "code::int")
+# # b) copy the UrMoac result 
+# copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_gid",
+#           "a.avg_tt", "highw_avg_tt_pass", "FLOAT",
+#           "public", "urmo_highway_tt_pass", "fid")
+
+##
+#### USAGE -7  adding # of SUT lines to rentTbl
+##
+# copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
+#           "a.numlines_t+a.numlines_u+a.numlines_s", "no_SUT_lines", "Int",
+#           "spat_char", "tvz_data_num", "tvz_id::int")
