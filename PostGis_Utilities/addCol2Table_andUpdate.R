@@ -13,6 +13,9 @@
 ## Error messages 1) "RS-DBI driver: (could not Retrieve the result : ERROR:  column "xyz" of relation "abc" does not exist" -- comment the first line -- ALTER TABLE %s.%s DROP ...
 ##
 
+## USAGE -11  demonstrates the application of CASE WHEN THEN END statment to add a col in the same table
+##            and filling it with 1 if a condition is met.
+
 ###
 ### Theoretically even inserting whole subselects aka temporary tables into the from clause part should be possible
 ###     see experimental USAGE examples -9 & 10 below.
@@ -133,9 +136,9 @@ copyCol <- function ( con,
 ##
 #### USAGE -8  adding green area per TVZ
 ##
-# copyCol(  con, "public", "rent_asl_tvz", "agg_id",
-#           "a.green_tvz_suround", "green_tvz_surround", "numeric",
-#           "spchar_green_tvz", "tvz_id")
+# copyCol(  con, "public", "rent", "tvz_id",
+#           "a.green_tvz_surround", "green_tvz_surround", "numeric",
+#           "rent_asl_tvz", "agg_id::integer")
 
 ####
 ## Experimental be warned:
@@ -161,11 +164,26 @@ copyCol <- function ( con,
 ##              with the averaged green proportion between itself and all surrounding cells
 ##              
 ##
-copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
-          "a.avg", "prop_green_sourround", "numeric",
-          "(select  a.tvz_id as aid, avg(b.prop_green_tvz) as avg
-                   from rentbln_18m_dl_da_rc as a JOIN rentbln_18m_dl_da_rc as b
-                   ON ST_intersects((a.geom), b.geom)
-                   group by a.tvz_id
-                   order by a.tvz_id)",
-          "aid")
+# copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
+#           "a.avg", "prop_green_sourround", "numeric",
+#           "(select  a.tvz_id as aid, avg(b.prop_green_tvz) as avg
+#                    from rentbln_18m_dl_da_rc as a JOIN rentbln_18m_dl_da_rc as b
+#                    ON ST_intersects((a.geom), b.geom)
+#                    group by a.tvz_id
+#                    order by a.tvz_id)",
+#           "aid")
+
+##
+#### USAGE -11  updating rent table
+##  WORKING     classification attempt with CASE WHEN END
+##              to set all cols 1 where gbgroesse = 1 and all others = 0
+##              using the same table.
+## 
+
+# copyCol(  con, "public", "rent", "id",
+#           "(select case
+#             WHEN a.gbgroesse = 1 THEN 1
+#             ELSE 0 END)",
+#           "singleFam", "numeric",
+#           "rent", "id")
+
