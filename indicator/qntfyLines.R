@@ -1,5 +1,5 @@
 ## Function for qunatification of Line Types
-## First: calculation of the total length of each line type per Aggregation area & writing of those to the resutl_table_name
+## First:  calculation of the total length of each line type per Aggregation area & writing of those to the resutl_table_name
 ## Second: calculation of the ratio of the length of each line Type against the combined length of all selected line Types
 ## Output: two sets of columns: 
 ##        1) the sum of the length of each linetype per aggreagtion/grid area, 
@@ -24,7 +24,7 @@
 
 #' @param connection             A connection to the PostGIS database.
 #' @param result_table_schema    -String- the schema of the table in which the results are written, will be created
-#' @param result_table_name      -String- the name of the table in which the results are written, will be created
+#' @param resultTable_name      -String- the name of the table in which the results are written, will be created
 #' @param edge_table_name        -String- the name of the table containing the edge/line-geoms; if other then public-schema: table_name --> schema.table_name
 #' @param edge_type_col          -String- the column which defines the line/edge - types, e.g. osm_type
 #' @param edge_geom              -String- the column holding the geometries of the edges/lines
@@ -44,7 +44,17 @@ library(RODBC)
 # -1-  #  ##  ##    Script writing the Intersection Table     ##  ##  ##  ##  ##  ##  ##  ##  ##
 ##############################################################################################
 ##
-##  IMPORTANT NOTICE.Personal check WHERE clause if switching between urmo and localhost
+##  IMPORTANT NOTICE.  PLZ be advised that the WHERE-clause in funct "createInterSecTable" is important, as it stands
+##                     it needs to be adapted to the needs aka the line type to be quantified and the network used
+##                     In its current iteration this funct. tries to qntfy highway%s., which are intermixed in the berlin_network with types of railway.%s
+##                     Therefore the WHERE-clause filters for all line types LIKE (highway.)
+##                     If the funct is to used more generically this WHERE-clause NEEDS to be adapted to the needs of the user,
+##                     e.g. qntfcation of specified bike lanes with just a yes|no choice, in that case it needs to be commented out.
+
+
+
+createInterSecTable(con, "bz_network_bike_ind", "urmo.bz", "bz_id" , "the_geom", "osm.berlin_network_old", "bikeusage", "shape")
+ 
 
 createInterSecTable <- function (
                                   connection,
@@ -67,9 +77,7 @@ createInterSecTable <- function (
       FROM %s AS Agg_Area
         LEFT JOIN %s AS Ex_Area
           ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-      WHERE Ex_Area.%s LIKE '%s'
-        AND ST_isValid(Agg_Area.%s) = TRUE
-        AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
+      -- WHERE Ex_Area.%s LIKE '%s'
       ) as foo
       ;
       
@@ -86,8 +94,6 @@ createInterSecTable <- function (
       edge_table_name,            ## LEFT JOIN  -- table containing the Examination Object  geometries and information here: lineTypes
       grid_geom, edge_geom,       ## ON         -- geometrie columns of both Agg and Ex objects
       edge_type_col, "highway%",  ## WHERE      -- type of Line and query for highway in its description --> its an OSM-special
-      grid_geom, edge_geom,       ## WHERE      -- geometrie columns of both Agg and Ex objects
-      grid_geom, edge_geom,       ## WHERE      -- geometrie columns of both Agg and Ex objects
       resultTable_name            ## ALTER TABLE
     ))
     
@@ -108,7 +114,7 @@ getVDist <- function(
                       resultTable_name
                       )
 {
-  VDistdf <- dbGetQuery(connection, sprintf(
+  vDistdf <- dbGetQuery(connection, sprintf(
   "
   SELECT DISTINCT linetype 
   FROM %s_interSect
@@ -117,9 +123,7 @@ getVDist <- function(
   resultTable_name
   ))
 
-VDist <- VDistdf[,1]
-
-return(VDist)    
+  return(vDistdf)    
 }
 
 
@@ -131,7 +135,7 @@ return(VDist)
 ##############################################################################################
 
 createResultTable <- function(  connection,
-                                  result_table_schema, result_table_name,
+                                  result_table_schema, resultTable_name,
                                   grid_id,
                                   grid_geom,
                                   grid_name
@@ -154,13 +158,13 @@ createResultTable <- function(  connection,
     ALTER TABLE %s.%s ADD PRIMARY KEY (key)
     ;"
     ,
-    result_table_schema, result_table_name,   ## DROP  
+    result_table_schema, resultTable_name,   ## DROP  
     grid_id,                                  ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
     grid_geom,                                ## SELECT #2   -- geometrie columns of Agg_Area
-    result_table_schema, result_table_name,   ## INTO
+    result_table_schema, resultTable_name,   ## INTO
     grid_name,                                ## FROM        -- table containing the Aggreation Area geometries 
     grid_geom, grid_geom,                     ## WHERE       -- geometry columns of Agg_Area 
-    result_table_schema, result_table_name    ## ALTER TABLE
+    result_table_schema, resultTable_name    ## ALTER TABLE
     ))  
  }
  
@@ -178,7 +182,7 @@ createResultTable <- function(  connection,
 
 updateTable <- function(  connection,
                           vDist,
-                          result_table_schema, result_table_name
+                          result_table_schema, resultTable_name
                           ) 
   {
     dbGetQuery(connection, sprintf( 
@@ -200,15 +204,15 @@ updateTable <- function(  connection,
         WHERE %s.Agg_ID = foo.Agg_ID
       ;"
       ,
-      result_table_schema, result_table_name, gsub('\\.','_',vDist),  ## ALTER DROP COl
-      result_table_schema, result_table_name, gsub('\\.','_',vDist),  ## ALTER ADD COl     -- vector containing distinct values
+      result_table_schema, resultTable_name, gsub('\\.','_',vDist),  ## ALTER DROP COl
+      result_table_schema, resultTable_name, gsub('\\.','_',vDist),  ## ALTER ADD COl     -- vector containing distinct values
        
-      result_table_schema, result_table_name,                         ## UPDATE
+      result_table_schema, resultTable_name,                         ## UPDATE
       gsub('\\.','_',vDist), gsub('\\.','_',vDist),                   ## SET          -- vector containing distinct values
       gsub('\\.','_',vDist),                                          ## SUM          -- vector containing distinct values      
-      result_table_name,                                              ## FROM 
+      resultTable_name,                                              ## FROM 
       vDist,                                                          ## WHERE  IN SELECT (foo)
-      result_table_name                                               ## WHERE        -- vector containing distinct values 
+      resultTable_name                                               ## WHERE        -- vector containing distinct values 
       ))
  }
 
@@ -221,7 +225,7 @@ updateTable <- function(  connection,
   
 sumLength <- function( connection,
                        vDist,
-                       result_table_schema, result_table_name
+                       result_table_schema, resultTable_name
                        )
   {
   sumLength <- dbGetQuery(connection, sprintf(
@@ -230,7 +234,7 @@ sumLength <- function( connection,
       SET sum_length = COALESCE(sum_length,0)+COALESCE(sum_%s,0)  -- summation of all values listed in the V(Dist)
     ;"
     ,
-    result_table_schema, result_table_name,
+    result_table_schema, resultTable_name,
     vDist
     ))
   }
@@ -244,7 +248,7 @@ sumLength <- function( connection,
 
 ratioLines2Table <- function(
                               connection,
-                              result_table_schema, result_table_name,
+                              result_table_schema, resultTable_name,
                               vDist
                               ) 
   {
@@ -257,9 +261,9 @@ ratioLines2Table <- function(
         SET ratio_%s = sum_%s/sum_length
       ;"
       ,
-      result_table_schema, result_table_name, vDist,  ## ALTER TABLE DROP COl     -- vector containing distinct values
-      result_table_schema, result_table_name, vDist,  ## ALTER TABLE ADD COL      -- vector containing distinct values
-      result_table_schema, result_table_name,         ## UPDATE
+      result_table_schema, resultTable_name, vDist,  ## ALTER TABLE DROP COl     -- vector containing distinct values
+      result_table_schema, resultTable_name, vDist,  ## ALTER TABLE ADD COL      -- vector containing distinct values
+      result_table_schema, resultTable_name,         ## UPDATE
       vDist, vDist                                    ## SET          -- vector containing distinct values
     ))
 }
@@ -273,32 +277,44 @@ ratioLines2Table <- function(
 
 qntfyLines <- function (
                         connection,
-                        result_table_schema, result_table_name,
+                        result_table_schema, resultTable_name,
                         edge_table_name, edge_type_col, edge_geom,
                         grid_name, grid_id, grid_geom
                         )
 {
-  createInterSecTable(connection, result_table_name, grid_name, grid_id, grid_geom, edge_table_name, edge_type_col, edge_geom)
+  createInterSecTable(connection, resultTable_name, grid_name, grid_id, grid_geom, edge_table_name, edge_type_col, edge_geom)
 
-  vDist <- getVDist(connection)
+  vDistdf <- getVDist(connection, resultTable_name)
+  
+  VDist <- vDistdf[ , 1]
 
   vDistName <- gsub('\\.','_',vDist)
 
-  resultTable <- createResultTable(connection, result_table_schema, result_table_name, grid_id, grid_geom, grid_name)
+  resultTable <- createResultTable(connection, result_table_schema, resultTable_name, grid_id, grid_geom, grid_name)
 
-  for (i in vDist) {updateTable(connection, i, result_table_schema, result_table_name)}
+  for (i in vDist) {updateTable(connection, i, result_table_schema, resultTable_name)}
 
   addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE %s.%s DROP COLUMN IF EXISTS sum_length;
                                                     ALTER TABLE %s.%s ADD COLUMN sum_length FLOAT
                                                     ;"
-                                                    , result_table_schema, result_table_name,result_table_schema,  result_table_name))
+                                                    , result_table_schema, resultTable_name,result_table_schema,  resultTable_name))
   
-  for (i in vDistName) {sumLength(connection, i, result_table_schema, result_table_name)}
+  for (i in vDistName) {sumLength(connection, i, result_table_schema, resultTable_name)}
 
-  for (i in vDistName) {ratioLines2Table(connection, result_table_schema, result_table_name, i)}
+  for (i in vDistName) {ratioLines2Table(connection, result_table_schema, resultTable_name, i)}
 }
 
+
 #USAGE:
-#qntfyLines <- function (connection,result_table_schema, result_table_name, edge_table_name, edge_type_col, edge_geom,
+#qntfyLines <- function (connection,result_table_schema, resultTable_name, edge_table_name, edge_type_col, edge_geom,
 #                        grid_name, grid_id, grid_geom)
 # qntfyLines(con, "public", "a_test_qnfyLines", "osm.berlin_network", "osm_type", "shape", "grids.fish_4000", "gid", "the_geom")
+
+qntfyLines <- function (
+  connection,
+  result_table_schema, resultTable_name,
+  edge_table_name, edge_type_col, edge_geom,
+  grid_name, grid_id, grid_geom
+)
+
+qntfyLines(con, "public", "bz_network_bike_ind", "osm.berlin_network_old", "bikeusage", "shape", "urmo.bz", "bz_id" , "the_geom")

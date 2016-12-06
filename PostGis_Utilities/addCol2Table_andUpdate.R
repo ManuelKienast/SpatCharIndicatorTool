@@ -1,3 +1,6 @@
+###########################################################################################################################
+# ABOUT: ##################################################################################################################
+
 ##
 ## Script for adding/copying a single column of data to an existing table
 
@@ -21,7 +24,9 @@
 ###     see experimental USAGE examples -9 & 10 below.
 
 
-###### PARAMETERS #################################
+
+###########################################################################################################################
+# PARAMETERS: #############################################################################################################
 
 #' @param connection             -A connection to the PostGIS database.
 #' @param table2update_schema    -String- the name of the schema the table, in which data is to be inserted, is located in
@@ -35,6 +40,10 @@
 #'                                            OR a whole subselect like this "(select * from ~)" can be used. SEE Usage -9 below
 #' @param copyFromTable_id       -String- the name of the colum with the unique_id of copyFromTable_name to connect to table2update_id, e.g. Tvz_id = tvz_id; can be ::typecast.
 
+
+
+###########################################################################################################################
+# FUNCTION: ###############################################################################################################
 
 copyCol <- function ( con,
                       table2update_schema, table2update_name, table2update_id,
@@ -63,10 +72,14 @@ copyCol <- function ( con,
       ))
 }
 
+
+
+###########################################################################################################################
+# USAGE EXAMPLES: #########################################################################################################
+
 ##  
 #### USAGE -1 :
 ##
-
 # copyCol( con, table2update_schema, table2update_name, table2update_id, old_ColName, new_colName, ColType,
 #               copyFromTable_schema, copyFromTable_name, copyFromTable_id)
 
@@ -76,10 +89,10 @@ copyCol <- function ( con,
 ## for simplicities sake, only cols with the same data-type should be used;
 ## it is possible to construct the loop to iterate through an additional vector [1) old_name 2)new_name 3)data type] though
 
+
 ##
 #### USAGE -2 looping function:
 ##
-
 # vector_newColNames <- c("test_id", "test_idx2")
 # vector_oldColNames <- c("a.tvz_id::numeric", "a.tvz_id::numeric+a.tvz_id::numeric")
 # 
@@ -87,10 +100,10 @@ copyCol <- function ( con,
 #                                                 vector_oldColNames[i], vector_newColNames[i], "text",
 #                                                 "urmo", "tvz", "tvz_id")
 
+
 ##
 #### USAGE -3  looping to solve problem 2
 ##
-
 # vector_newColNames <- c("inc1", "inc2", "inc3", "inc4", "fun_dens")
 # vector_oldColNames <- c("hh_ek1", "hh_ek2", "hh_ek3", "a.hh_ek4+a.hh_ek5+a.hh_ek6", "fun_dens")
 # 
@@ -98,13 +111,14 @@ copyCol <- function ( con,
 #                                                     vector_oldColNames[i], vector_newColNames[i], "FLOAT",
 #                                                     "spat_cahr.tvz_data_num", "tvz_id::integer")
 
+
 ##
 #### USAGE -4  average of different cols AvgIncome
 ##
-# 
-  # copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
-  #           "a.hh_ek1*450+a.hh_ek2*1200+a.hh_ek3*2050+a.hh_ek4*3100+a.hh_ek5*4300+a.hh_ek6*7500", "avgIncome", "FLOAT",
-  #           "spat_cahr.tvz_data_num", "tvz_id::integer")
+# copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
+#           "a.hh_ek1*450+a.hh_ek2*1200+a.hh_ek3*2050+a.hh_ek4*3100+a.hh_ek5*4300+a.hh_ek6*7500", "avgIncome", "FLOAT",
+#           "spat_cahr.tvz_data_num", "tvz_id::integer")
+
 
 ##
 #### USAGE -5  adding the ratio of migrant per tvz
@@ -113,6 +127,7 @@ copyCol <- function ( con,
 # copyCol(  con, "public", "rentbln_18m_dl_da_rc", "tvz_id",
 #           "a.pop_ausl/a.pop_tot", "prop_migr", "FLOAT",
 #           "public.rent_asl_tvz", "agg_id::int")
+
 
 ##
 #### USAGE -6  adding UrMoAC output file to aggregate table
@@ -126,6 +141,7 @@ copyCol <- function ( con,
 #           "a.avg_tt", "highw_avg_tt_pass", "FLOAT",
 #           "public.urmo_highway_tt_pass", "fid")
 
+
 ##
 #### USAGE -7  adding # of SUT lines to rentTbl
 ##
@@ -133,12 +149,14 @@ copyCol <- function ( con,
 #           "a.numlines_t+a.numlines_u+a.numlines_s", "no_SUT_lines", "Int",
 #           "spat_cahr.tvz_data_num", "tvz_id::int")
 
+
 ##
 #### USAGE -8  adding green area per TVZ
 ##
 # copyCol(  con, "public", "rent", "tvz_id",
 #           "a.green_tvz_surround", "green_tvz_surround", "numeric",
 #           "rent_asl_tvz", "agg_id::integer")
+
 
 ####
 ## Experimental be warned:
@@ -149,14 +167,14 @@ copyCol <- function ( con,
 ##              in this case the avg of the tvz_ids
 ##              which are ST_touching aka surrounding each tvz-cell are queried for.
 ##
- # copyCol(  con, "public", "tvz_test", "tvz_id",
- #           "a.bid", "avg_adj_tvz_id", "Int",
- #           "(select  a.tvz_id as aid, avg(b.tvz_id::int) as bid 
- #                    from urmo.tvz as a JOIN urmo.tvz as b
- #                    ON ST_touches((a.the_geom), b.the_geom)
- #                    group by a.tvz_id
- #                    order by a.tvz_id)",
- #           "aid")
+# copyCol(  con, "public", "tvz_test", "tvz_id",
+#           "a.bid", "avg_adj_tvz_id", "Int",
+#           "(select  a.tvz_id as aid, avg(b.tvz_id::int) as bid 
+#                    from urmo.tvz as a JOIN urmo.tvz as b
+#                    ON ST_touches((a.the_geom), b.the_geom)
+#                    group by a.tvz_id
+#                    order by a.tvz_id)",
+#           "aid")
 
 
 ##
@@ -179,7 +197,6 @@ copyCol <- function ( con,
 ##              to set all cols 1 where gbgroesse = 1 and all others = 0
 ##              using the same table.
 ## 
-
 # copyCol(  con, "public", "rent", "id",
 #           "(select case
 #             WHEN a.gbgroesse = 1 THEN 1
@@ -187,3 +204,6 @@ copyCol <- function ( con,
 #           "singleFam", "numeric",
 #           "rent", "id")
 
+copyCol(  con, "public", "rent", "id",
+          "a.zimmeranza::numeric", "zimmeranza_num", "numeric",
+          "rent", "id")

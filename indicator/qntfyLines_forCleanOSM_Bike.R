@@ -270,3 +270,6 @@ qntfyLinesBike <- function( connection,
 # Ex_Area = "osm.berlin_network"
 # label_column = "bikeusage"
 # Ex_geom = "shape"
+
+qntfyLinesBike(con, 'public.abz_network_bike_ind', "urmo.abz", "abz_id" , "the_geom", "osm.berlin_network_old", "bikeusage", "shape")
+
