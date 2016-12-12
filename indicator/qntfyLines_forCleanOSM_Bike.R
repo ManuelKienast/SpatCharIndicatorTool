@@ -31,7 +31,7 @@ createInterSecTable( connection, "_qntfyLine_lines_R_test",
 
 
 
-### testing for the whole lineNetwork
+### testing for the whole lineNetwork; it itersected perfectly.
 createInterSecTable( connection, "_qntfyLine_lines_R_test_II", 
                      "urmo.bz", "bz_id", "the_geom",
                      "osm.berlin_network", "osm_type", "shape")
@@ -101,7 +101,7 @@ getVDist <- function (
 {
   VDistdf <- dbGetQuery(connection, sprintf(
   
-  "SELECT DISTINCT linetype 
+  "SELECT DISTINCT Linetype 
     FROM %s_InterSec
     ;"
     ,
@@ -114,8 +114,8 @@ return(VDist)
 }
 
 
-## DEBUGGING
-getVDist(con, resultTable_name =  "_qntfyLine_lines_R_test")
+## DEBUGGING - working
+vDist <- getVDist(con, resultTable_name =  "bz_osm")
 
 ##########  FUNCTION  ##########  
 ## writing results table
@@ -143,16 +143,22 @@ createResultTable <- function( connection,
   ALTER TABLE %s ADD PRIMARY KEY (key)
   ;"
   ,
-  resultTable_name,       ## DROP If Exists
+  resultTable_name,        ## DROP If Exists
   id_column,               ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
   Agg_geom,                ## SELECT #2   -- geometrie columns of Agg_Area
   resultTable_name,
   Agg_Area,                ## FROM        -- table containing the Aggreation Area geometries 
   Agg_geom, Agg_geom,
-  resultTable_name        ## WHERE       -- geometry columns of Agg_Area
+  resultTable_name         ## WHERE       -- geometry columns of Agg_Area
 ))  
   
 }
+
+## DEBUGGING -  working
+createResultTable( con, "bz_osm", "bz_id", "the_geom", "urmo.bz")
+
+
+
 
 ##########  FUNCTION  ##########
 ## updating a table (create and fill columns)
@@ -182,7 +188,7 @@ updateTable <- function( connection,
         SELECT 
           Agg_ID,
           SUM(ST_Length(geom))/1000 AS sum_%s
-            FROM InterSec
+            FROM %s_InterSec
         WHERE lineType = '%s'
         GROUP BY Agg_ID
         ORDER BY Agg_ID
@@ -190,18 +196,23 @@ updateTable <- function( connection,
       WHERE %s.Agg_ID = foo.Agg_ID
   ;"
   ,
-  resultTable_name,
-  gsub('\\.','_',vDist) ,
-  resultTable_name, ## DROP COl     -- vector containing distinct values
-  gsub('\\.','_',vDist), 
-  resultTable_name,## ALTER TABLE  -- vector containing distinct values
-  gsub('\\.','_',vDist), gsub('\\.','_',vDist),  ## SET          -- vector containing distinct values
-  gsub('\\.','_',vDist),         ## SUM          -- vector containing distinct values      
-  vDist,
-  resultTable_name## WHERE        -- vector containing distinct values 
+  resultTable_name, gsub('\\.','_',vDist),       ## ALTER TABLE DROP
+  resultTable_name, gsub('\\.','_',vDist),       ## ALTER TABLE ADD COl     -- vector containing distinct values
+  
+  resultTable_name,                              ## UPDATE                  -- vector containing distinct values
+  gsub('\\.','_',vDist), gsub('\\.','_',vDist),  ## SET                     -- vector containing distinct values
+  gsub('\\.','_',vDist),                         ## SUM                     -- vector containing distinct values      
+  resultTable_name,                              ## FROM                    -- vector containing distinct values
+  vDist,                                         ## WHERE -1- Linetype
+  resultTable_name                               ## WHERE -2- resutlTable   -- vector containing distinct values 
 ))
   
 }
+
+## DEBUGGING - working
+for (i in vDist) {updateTable(connection, i, "bz_osm")}
+
+
 
 
 ##########  FUNCTION  ##########  
@@ -226,6 +237,14 @@ sumLength <- function( connection,
 }
 
 
+## DEBUGGING - working
+addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE %s DROP COLUMN IF EXISTS sum_length;
+                                                    ALTER TABLE %s ADD COLUMN sum_length FLOAT;", "bz_osm", "bz_osm"))
+
+for (i in vDistName) {sumLength(connection, i, "bz_osm")}
+
+
+
 ##########  FUNCTION  ##########  
 ## setting Function for line quantification
 
@@ -246,14 +265,18 @@ ratioLines2Table <- function( connection,
     SET ratio_%s = sum_%s/sum_length
   ;"
   ,
-  resultTable_name,
-  vDist,         ## DROP COl     -- vector containing distinct values
-  resultTable_name,
-  vDist,         ## ALTER TABLE  -- vector containing distinct values
-  resultTable_name,
-  vDist, vDist   ## SET          -- vector containing distinct values
+  resultTable_name, vDist,  ## ALTER TABLE DROP COl     -- vector containing distinct values
+  resultTable_name, vDist,  ## ALTER TABLE ADD COL -- vector containing distinct values
+  
+  resultTable_name,         ## UPDATE  
+  vDist, vDist              ## SET          -- vector containing distinct values
 ))
 }
+
+
+## DEBUGGING - 
+for (i in vDistName) {ratioLines2Table(connection, "bz_osm", i)}
+
 
 
 ##########  FUNCTION  ##########  
