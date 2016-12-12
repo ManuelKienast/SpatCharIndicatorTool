@@ -122,7 +122,7 @@ getVDist(con, resultTable_name =  "_qntfyLine_lines_R_test")
 ## create result table with Agg_Area_Id and its geom to select other results into
 
 createResultTable <- function( connection,
-                               result_table_name, id_column,
+                               resultTable_name, id_column,
                                Agg_geom, Agg_Area
                                )
   
@@ -143,13 +143,13 @@ createResultTable <- function( connection,
   ALTER TABLE %s ADD PRIMARY KEY (key)
   ;"
   ,
-  result_table_name,       ## DROP If Exists
+  resultTable_name,       ## DROP If Exists
   id_column,               ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
   Agg_geom,                ## SELECT #2   -- geometrie columns of Agg_Area
-  result_table_name,
+  resultTable_name,
   Agg_Area,                ## FROM        -- table containing the Aggreation Area geometries 
   Agg_geom, Agg_geom,
-  result_table_name        ## WHERE       -- geometry columns of Agg_Area
+  resultTable_name        ## WHERE       -- geometry columns of Agg_Area
 ))  
   
 }
@@ -165,7 +165,7 @@ createResultTable <- function( connection,
 
 updateTable <- function( connection,
                          vDist,
-                         result_table_name
+                         resultTable_name
                          )
   
 {
@@ -190,15 +190,15 @@ updateTable <- function( connection,
       WHERE %s.Agg_ID = foo.Agg_ID
   ;"
   ,
-  result_table_name,
+  resultTable_name,
   gsub('\\.','_',vDist) ,
-  result_table_name, ## DROP COl     -- vector containing distinct values
+  resultTable_name, ## DROP COl     -- vector containing distinct values
   gsub('\\.','_',vDist), 
-  result_table_name,## ALTER TABLE  -- vector containing distinct values
+  resultTable_name,## ALTER TABLE  -- vector containing distinct values
   gsub('\\.','_',vDist), gsub('\\.','_',vDist),  ## SET          -- vector containing distinct values
   gsub('\\.','_',vDist),         ## SUM          -- vector containing distinct values      
   vDist,
-  result_table_name## WHERE        -- vector containing distinct values 
+  resultTable_name## WHERE        -- vector containing distinct values 
 ))
   
 }
@@ -210,7 +210,7 @@ updateTable <- function( connection,
 
 sumLength <- function( connection,
                        vDist,
-                       result_table_name
+                       resultTable_name
                        )
   
 {
@@ -220,7 +220,7 @@ sumLength <- function( connection,
     SET sum_length = COALESCE(sum_length,0)+COALESCE(sum_%s,0)  -- summation of all values listed in the V(Dist)
   ;"
   ,
-  result_table_name,
+  resultTable_name,
   vDist
 ))
 }
@@ -230,7 +230,7 @@ sumLength <- function( connection,
 ## setting Function for line quantification
 
 ratioLines2Table <- function( connection,
-                              result_table_name,
+                              resultTable_name,
                               vDist
                               ) 
   
@@ -246,11 +246,11 @@ ratioLines2Table <- function( connection,
     SET ratio_%s = sum_%s/sum_length
   ;"
   ,
-  result_table_name,
+  resultTable_name,
   vDist,         ## DROP COl     -- vector containing distinct values
-  result_table_name,
+  resultTable_name,
   vDist,         ## ALTER TABLE  -- vector containing distinct values
-  result_table_name,
+  resultTable_name,
   vDist, vDist   ## SET          -- vector containing distinct values
 ))
 }
@@ -260,30 +260,30 @@ ratioLines2Table <- function( connection,
 ## the complete Function
 
 qntfyLinesBike <- function( connection,
-                            result_table_name,
+                            resultTable_name,
                             Agg_Area, id_column, Agg_geom,
                             Ex_Area, label_column, Ex_geom
                             )
   
 {
-  createInterSecTable(connection, Agg_Area, id_column, Agg_geom, Ex_Area, label_column, Ex_geom)
+  createInterSecTable(connection, resultTable_name, Agg_Area, id_column, Agg_geom, Ex_Area, label_column, Ex_geom)
   
-  vDist <- getVDist(connection)
+  vDist <- getVDist(connection, resultTable_name)
   
   vDistName <- gsub('\\.','_',vDist)
   
-  resultTable <- createResultTable(connection, result_table_name, id_column, Agg_geom, Agg_Area)
+  resultTable <- createResultTable(connection, resultTable_name, id_column, Agg_geom, Agg_Area)
   
   
-  for (i in vDist) {updateTable(connection, i, result_table_name)}
+  for (i in vDist) {updateTable(connection, i, resultTable_name)}
   
   
   addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE %s DROP COLUMN IF EXISTS sum_length;
-                                                    ALTER TABLE %s ADD COLUMN sum_length FLOAT;", result_table_name, result_table_name))
+                                                    ALTER TABLE %s ADD COLUMN sum_length FLOAT;", resultTable_name, resultTable_name))
   
-  for (i in vDistName) {sumLength(connection, i, result_table_name)}
+  for (i in vDistName) {sumLength(connection, i, resultTable_name)}
   
-  for (i in vDistName) {ratioLines2Table(connection, result_table_name, i)}
+  for (i in vDistName) {ratioLines2Table(connection, resultTable_name, i)}
   
 }
 
