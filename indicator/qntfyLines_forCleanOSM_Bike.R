@@ -16,7 +16,30 @@ library(RODBC)
 ##  Additionally the setting of the WHERE col LIKE hw_ is necessary for calc of all, not for calc of bike ratio yes|no
 ##
 
+
+
+
+####### Debugguing: this is working for a reduced lineNetwork the Intersect table is written correctly
+createInterSecTable( connection, "_qntfyLine_lines_R_test", 
+                                 "urmo.abz", "abz_id", "the_geom",
+                                 "_qntfyLine_lines_test", "osm_type", "shape")
+
+### testing for the name_id column
+createInterSecTable( connection, "_qntfyLine_lines_R_test", 
+                     "urmo.bz", "bz_name", "the_geom",
+                     "_qntfyLine_lines_test", "osm_type", "shape")
+
+
+
+### testing for the whole lineNetwork
+createInterSecTable( connection, "_qntfyLine_lines_R_test_II", 
+                     "urmo.bz", "bz_id", "the_geom",
+                     "osm.berlin_network", "osm_type", "shape")
+
+
+
 createInterSecTable <- function( connection,
+                                 resultTable_name,
                                  Agg_Area, id_column, Agg_geom,
                                  Ex_Area, label_column, Ex_geom
                                  ) 
@@ -24,9 +47,9 @@ createInterSecTable <- function( connection,
   
   intersectTable <- dbGetQuery(connection, sprintf(
     
-    "DROP TABLE IF EXISTS InterSec;
+    "DROP TABLE IF EXISTS %s_InterSec;
     
-    SELECT * INTO public.InterSec FROM
+    SELECT * INTO public.%s_InterSec FROM
       (SELECT 
         row_number() over (order by 1) as key,
         Agg_Area.%s AS Agg_ID,
@@ -36,14 +59,16 @@ createInterSecTable <- function( connection,
             %s AS Agg_Area
               LEFT JOIN %s AS Ex_Area
                 ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
-          WHERE 
+          -- WHERE 
           -- Ex_Area.%s LIKE '%s' AND 
-             ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
+          -- ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
       ) as foo;
 
-    ALTER TABLE InterSec ADD PRIMARY KEY (key)
+    ALTER TABLE %s_InterSec ADD PRIMARY KEY (key)
     ;"
     ,
+    resultTable_name,             ## Drop
+    resultTable_name,             ## SLECT INTO
     id_column,                    ## Agg_Area         -- column with the unique Agg_Area_ID e.g. PLR-id
     label_column,                 ## label_column.    -- column with linetype specification
     
@@ -51,9 +76,9 @@ createInterSecTable <- function( connection,
     Agg_Area,                     ## FROM             -- table containing the Aggreation Area geometries 
     Ex_Area,                      ## LEFT JOIN        -- table containing the Examination Object  geometries and information here: lineTypes
     Agg_geom, Ex_geom,            ## ON               -- geometrie columns of both Agg and Ex objects
-    ## label_column, "highway%",  ## WHERE            -- type of Line and query for highway in its description --> its an OSM-special
+    label_column, "highway%",     ## WHERE            -- type of Line and query for highway in its description --> its an OSM-special
     Agg_geom, Ex_geom,            ## WHERE            -- geometrie columns of both Agg and Ex objects
-    Agg_geom, Ex_geom             ## WHERE            -- geometrie columns of both Agg and Ex objects
+    resultTable_name              ## Add primary key
     
     ))
   
@@ -70,14 +95,17 @@ createInterSecTable <- function( connection,
 ## reminder: switch WHERE linetype to 'highway%' for OSM data, otherwise no WHERE is needed
 
 getVDist <- function (
-                      connection
+                      connection, 
+                      resultTable_name
                       )
 {
   VDistdf <- dbGetQuery(connection, sprintf(
   
   "SELECT DISTINCT linetype 
-    FROM Intersec
+    FROM %s_InterSec
     ;"
+    ,
+    resultTable_name
   ))
 
 VDist <- VDistdf[,1]
@@ -85,6 +113,9 @@ VDist <- VDistdf[,1]
 return(VDist)    
 }
 
+
+## DEBUGGING
+getVDist(con, resultTable_name =  "_qntfyLine_lines_R_test")
 
 ##########  FUNCTION  ##########  
 ## writing results table
@@ -112,13 +143,13 @@ createResultTable <- function( connection,
   ALTER TABLE %s ADD PRIMARY KEY (key)
   ;"
   ,
+  result_table_name,       ## DROP If Exists
+  id_column,               ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
+  Agg_geom,                ## SELECT #2   -- geometrie columns of Agg_Area
   result_table_name,
-  id_column,       ## SELECT #1   -- column with the unique Agg_Area_ID e.g. PLR-id  
-  Agg_geom,     ## SELECT #2   -- geometrie columns of Agg_Area
-  result_table_name,
-  Agg_Area,     ## FROM        -- table containing the Aggreation Area geometries 
+  Agg_Area,                ## FROM        -- table containing the Aggreation Area geometries 
   Agg_geom, Agg_geom,
-  result_table_name## WHERE       -- geometry columns of Agg_Area
+  result_table_name        ## WHERE       -- geometry columns of Agg_Area
 ))  
   
 }
