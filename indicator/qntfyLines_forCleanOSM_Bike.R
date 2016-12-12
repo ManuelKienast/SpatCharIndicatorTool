@@ -115,7 +115,7 @@ return(VDist)
 
 
 ## DEBUGGING - working
-vDist <- getVDist(con, resultTable_name =  "bz_osm")
+#vDist <- getVDist(con, resultTable_name =  "bz_osm")
 
 ##########  FUNCTION  ##########  
 ## writing results table
@@ -155,7 +155,7 @@ createResultTable <- function( connection,
 }
 
 ## DEBUGGING -  working
-createResultTable( con, "bz_osm", "bz_id", "the_geom", "urmo.bz")
+#createResultTable( con, "bz_osm", "bz_id", "the_geom", "urmo.bz")
 
 
 
@@ -210,7 +210,7 @@ updateTable <- function( connection,
 }
 
 ## DEBUGGING - working
-for (i in vDist) {updateTable(connection, i, "bz_osm")}
+#for (i in vDist) {updateTable(connection, i, "bz_osm")}
 
 
 
@@ -238,10 +238,10 @@ sumLength <- function( connection,
 
 
 ## DEBUGGING - working
-addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE %s DROP COLUMN IF EXISTS sum_length;
-                                                    ALTER TABLE %s ADD COLUMN sum_length FLOAT;", "bz_osm", "bz_osm"))
+#addSumLengthCol <- dbGetQuery(connection, sprintf("ALTER TABLE %s DROP COLUMN IF EXISTS sum_length;
+ #                                                   ALTER TABLE %s ADD COLUMN sum_length FLOAT;", "bz_osm", "bz_osm"))
 
-for (i in vDistName) {sumLength(connection, i, "bz_osm")}
+#for (i in vDistName) {sumLength(connection, i, "bz_osm")}
 
 
 
@@ -275,7 +275,7 @@ ratioLines2Table <- function( connection,
 
 
 ## DEBUGGING - 
-for (i in vDistName) {ratioLines2Table(connection, "bz_osm", i)}
+#for (i in vDistName) {ratioLines2Table(connection, "bz_osm", i)}
 
 
 
@@ -309,6 +309,14 @@ qntfyLinesBike <- function( connection,
   for (i in vDistName) {ratioLines2Table(connection, resultTable_name, i)}
   
 }
+
+
+## DEBUGGING - with bikeusage YES|NO updated table
+# qntfyLinesBike ( con, "a_test_qntyfyLines_Clean_bz_test",
+#                       "urmo.bz", "bz_id", "the_geom",
+#                       "osm.berlin_network", "bikeusage", "shape")
+
+
 
 ##qntfyLines <- function (connection,result_table_name,Agg_Area,id_column,Agg_geom, Ex_Area,label_column,Ex_geom)
  
