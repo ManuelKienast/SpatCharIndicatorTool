@@ -4,6 +4,8 @@
 ##
 ## 
 
+setwd("D:\\Manuel\\git\\SpatCharIndicatorTool")
+
 source("sumo_import_and_calcs\\functions_compilation.R")
 
 library(RPostgreSQL)
@@ -50,26 +52,75 @@ calcTraffic( con,
 
 
 
-
-gridsize <- c("500", "1000", "2000", "4000")
-
-for (i in gridsize){
-  calcTraffic(con, "public", sprintf("SumoTraffic_fish_%s",i), "grids", sprintf("fish_%s",i), "geom", "public", "compiledimport")
-  }
-
-
+##USAGE -1- :
+# gridsize <- c("500", "1000", "2000", "4000")
+# 
+# for (i in gridsize){
+#   calcTraffic(con, "public", sprintf("SumoTraffic_fish_%s",i), "grids", sprintf("fish_%s",i), "geom", "public", "compiledimport")
+#   }
 
 
-# # USAGE:
-#  calcSumoTraffic( con,
-#                   "public", "a_test_compiled",
-#                   "a_test_nod", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.nod.csv",
-#                   "a_test_edg", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.edg.csv",
-#                   "a_test_aggregated", "D:\\Manuel\\vonSimon\\Von Matthias\\aggregated_oneshot_meso.csv",
-#                    "25833",
-#                    "public", "a_test_result",
-#                    "grids", "geom"
+
+##USAGE -2- :
+getAll2import( con,
+              "sumo_traffic", "sumoData_Cmpltn",
+              "sumoData_nod", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.nod.csv",
+              "sumoData_edg", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.edg.csv",
+              "sumoData_aggregated", "D:\\Manuel\\vonSimon\\Von Matthias\\aggregated_oneshot_meso.csv",
+              "25833")
+
+calcTraffic( con,
+             "sumo_traffic", "sumotraffic_tvz",
+             "urmo", "tvz", "the_geom",
+             "sumo_traffic", "sumoData_Cmpltn")
+
+
+
+# ##### OR both
+# 
+# doAll <- function (con,
+#                    importTables_schema, table_name_compiled,
+#                    table_name_nod, filepath_nod,
+#                    table_name_edg, filepath_edg,
+#                    table_name_aggregated, filepath_aggregated,
+#                    set_CS2,
+#                    resultTable_schema, resultTable_name,
+#                    grid_schema, grid_name, grid_geom,
 #                    )
+# {
+#   getAll2import( con,
+#                  importTables_schema, table_name_compiled,
+#                  table_name_nod, filepath_nod,
+#                  table_name_edg, filepath_edg,
+#                  table_name_aggregated, filepath_aggregated,
+#                  set_CS2
+#                   )
+#     calcTraffic( con,
+#                resultTable_schema, resultTable_name,
+#                grid_schema, grid_name, grid_geom,
+#                importTables_schema, table_name_compiled
+#                 )
+# }
+# 
+# 
+# 
+# # # USAGE:
+#  doAll( con,
+#         "sumo_traffic", "dataCmpltn",
+#         "sumoData_nod", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.nod.csv",
+#         "sumoData_edg", "D:\\Manuel\\vonSimon\\Von Matthias\\net_plain.edg.csv",
+#         "sumoData_aggregated", "D:\\Manuel\\vonSimon\\Von Matthias\\aggregated_oneshot_meso.csv",
+#         "25833",
+#         "sumo_traffic", "sumotraffic_tvz",
+#         "urmo", "tvz", "the_geom"
+#          )
+# 
+# ## USAGE:
+# doAll( con,
+#              "sumo_traffic", "sumotraffic_tvz",
+#              "urmo", "tvz", "the_geom",
+#              importTables_schema, table_name_compiled
+# )
 
 
 
