@@ -72,7 +72,6 @@ createInterSecTable <- function (
         row_number() over (order by 1) as key,
         Agg_Area.%s AS Agg_ID,
         Ex_Area.%s AS LineType,
-        --Ex_Area.vmax AS speed,	
         ST_Multi(ST_Intersection(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))::geometry(multiLineString, 25833) as geom
       FROM %s AS Agg_Area
         LEFT JOIN %s AS Ex_Area
@@ -88,7 +87,6 @@ createInterSecTable <- function (
       resultTable_name,           ## SELECT * INTO
       grid_id,                    ## Agg_Area   -- column with the unique Agg_Area_ID e.g. PLR-id
       edge_type_col,              ## edge_type_col.    -- column with linetype specification
-      ## Ex_speed,                -- column holding the max speed per line type, or any secondary objects
       grid_geom, edge_geom,       ## ST_Multi   -- geometry columns of both Agg and Ex objects
       grid_name,                  ## FROM       -- table containing the Aggreation Area geometries 
       edge_table_name,            ## LEFT JOIN  -- table containing the Examination Object  geometries and information here: lineTypes
