@@ -1,4 +1,4 @@
-﻿---
+---
 --- Cleaning the rentbln dataset, i.e. distance btwn kgs44 and rentobjects too high, relisting of objects in the IS-dataset, implausibilities in the IS-data, e.g. flatsize 0.1 sqm, rent 1*10^9 € etc
 --- documentation of changes to the dataset is in the comments
 ---
@@ -196,13 +196,14 @@ ALTER TABLE rentbln_18m_dl_da ADD PRIMARY KEY (id);
 -------------------------------------
 --  Write the table with corrections for implausible rents and sqm (aka rc - rent corrected)
 --  looking at the data  
---  testing: things to filter: wohnflae 10<>1111, qmmiete 0.5<>30
+--  testing: things to filter: wohnflae 10<>1111, qmmiete 0.5<>30, zimmeranzahl/wohnflaech > 2
 --  eliminating 59 rows 
 --  with 62412 rows remaining
 select qmmiete, mietekalt, mietewarm, wohnflaech, etage, strasse, einstellda, laufzeitta, einstellda+laufzeitta::int  
 	from rentbln_18m_dl_da 
 	WHERE wohnflaech between 10 AND 1111 
 		AND qmmiete between 0.5 AND 30
+		AND zimmeranza_num/wohnflaech > 2
 	order by qmmiete desc, mietekalt, wohnflaech desc, einstellda
 	;
 
@@ -212,6 +213,7 @@ SELECT * INTO rentbln_18m_dl_da_rc
 		rentbln_18m_dl_da as r
 	WHERE wohnflaech between 10 AND 1111 
 		AND qmmiete between 0.5 AND 30
+		AND zimmeranza_num/wohnflaech > 2
 		;
 ALTER TABLE rentbln_18m_dl_da_rc ADD PRIMARY KEY (id);
 
