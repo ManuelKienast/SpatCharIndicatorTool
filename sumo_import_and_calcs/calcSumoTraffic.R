@@ -62,17 +62,17 @@ calcTraffic( con,
 
 
 ##USAGE -2- :
-getAll2import( con,
-              "sumo_traffic", "sumoData_Cmpltn",
-              "sumoData_nod", "G:\\VF_Server_neu\\Benutzer\\K-O\\Nieland_Simon\\Von Matthias\\net_plain.nod.csv",
-              "sumoData_edg", "G:\\VF_Server_neu\\Benutzer\\K-O\\Nieland_Simon\\Von Matthias\\net_plain.edg.csv",
-              "sumoData_aggregated", "G:\\VF_Server_neu\\Benutzer\\K-O\\Nieland_Simon\\Von Matthias\\aggregated_oneshot_meso.csv",
-              "25833")
-
-calcTraffic( con,
-             "sumo_traffic", "sumotraffic_tvz",
-             "urmo", "tvz", "the_geom",
-             "sumo_traffic", "sumoData_Cmpltn")
+# getAll2import( con,
+#               "sumo_traffic", "sumoData_Cmpltn",
+#               "sumoData_nod", "G:\\VF_Server_neu\\Benutzer\\K-O\\Nieland_Simon\\Von Matthias\\net_plain.nod.csv",
+#               "sumoData_edg", "G:\\VF_Server_neu\\Benutzer\\K-O\\Nieland_Simon\\Von Matthias\\net_plain.edg.csv",
+#               "sumoData_aggregated", "G:\\VF_Server_neu\\Benutzer\\K-O\\Nieland_Simon\\Von Matthias\\aggregated_oneshot_meso.csv",
+#               "25833")
+# 
+# calcTraffic( con,
+#              "sumo_traffic", "sumotraffic_tvz",
+#              "urmo", "tvz", "the_geom",
+#              "sumo_traffic", "sumoData_Cmpltn")
 
 
 
