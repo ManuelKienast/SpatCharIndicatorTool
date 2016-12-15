@@ -107,7 +107,7 @@ e2 <- rent_corr_eigen[,2]
 plot(e1,e2, col='white', xlim=range(e1,e2), ylim=range(e1,e2))
 text(e1,e2, rownames(rent_corr_test), cex=1)
 title("EigenvectorPlot of Rent_corrr_Test")
-arrows(0, 0, e1, e2, cex=0.5, col="red", length=0.1)
+arrows(0, 0, e1, e2, cex=0.5, col="blue", length=0.1)
 
 
 #########################################################################################################
