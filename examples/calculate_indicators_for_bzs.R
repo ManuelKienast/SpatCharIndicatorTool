@@ -8,12 +8,7 @@ con <- dbConnect(dbDriver("PostgreSQL"),
                  password = "postgres",
                  dbname = "urmo")
 
-# con <- dbConnect(dbDriver("PostgreSQL"),
-#                  host = "129.247.28.69",
-#                  port = 5432,
-#                  user = "admin",
-#                  password = "Urb4n3M0bi1it%t",
-#                  dbname = "urmo")
+
 
 # closeOpenPSQLConnections <- function(){
 #   

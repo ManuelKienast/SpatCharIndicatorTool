@@ -1,5 +1,5 @@
 #source("indicator\\qntfyLines.R")
-source("indicator\\qntfyLines_forCleanOSM_Bike.R")
+source("indicator\\osmIndicators.R")
 
 con <- dbConnect(dbDriver("PostgreSQL"),
                  host = "localhost",
@@ -18,5 +18,5 @@ con <- dbConnect(dbDriver("PostgreSQL"),
 
 
 #for(grid_size in grids){
-qntfyLinesBike(con, 'sg_network_bike_ind', "urmo.sg", "sg_id" , "the_geom", "osm.test_network", "mode_bike", "the_geom")
+calculateHighwayPercentages(con, 'tvz_network_ind_osm', "urmo.tvz", "tvz_id" , "the_geom", "osm.berlin_network", "street_type", "the_geom")
 #}

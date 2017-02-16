@@ -25,7 +25,7 @@ grids <- c("4000", "2000", "1000", "500")
 
 ## HExGrids
 for(grid in grids){
-  hexgrid(con, grid, "urmo", "plr", "the_geom", "grid", paste("hex_", grid, sep="")) 
+  hexgrid(con, grid, "osm", "kopenhagen_network", "the_geom", "public", paste("kopenhagen_hex_", grid, sep="")) 
 }
 
 
