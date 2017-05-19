@@ -60,7 +60,7 @@ createInterSecTable <- function( connection,
     LEFT JOIN %s AS Ex_Area
     ON (ST_INTERSECTS(Agg_Area.%s, ST_Transform(Ex_Area.%s, 25833)))
      WHERE 
-     Ex_Area.%s LIKE '%s' AND 
+
      ST_isValid(Agg_Area.%s) = TRUE AND ST_isValid(ST_Transform(Ex_Area.%s, 25833)) = TRUE 
     ) as foo;
     
@@ -76,7 +76,7 @@ createInterSecTable <- function( connection,
     Agg_Area,                     ## FROM             -- table containing the Aggreation Area geometries 
     Ex_Area,                      ## LEFT JOIN        -- table containing the Examination Object  geometries and information here: lineTypes
     Agg_geom, Ex_geom,            ## ON               -- geometrie columns of both Agg and Ex objects
-    label_column, "highway%",     ## WHERE            -- type of Line and query for highway in its description --> its an OSM-special
+    #label_column, "highway%",     ## WHERE            -- type of Line and query for highway in its description --> its an OSM-special
     Agg_geom, Ex_geom,            ## WHERE            -- geometrie columns of both Agg and Ex objects
     resultTable_name              ## Add primary key
     
@@ -84,7 +84,7 @@ createInterSecTable <- function( connection,
   
   return(intersectTable)
 }
-
+#--Ex_Area.%s LIKE '%s' AND 
 
 #qntfyLines(con, Agg_Area, id_column, Agg_geom, Ex_Area, label_column, Ex_geom)
 #

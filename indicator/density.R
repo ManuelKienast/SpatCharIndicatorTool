@@ -47,18 +47,25 @@
 ###########DENSITY POINT IN POLYGON################
 
 
-dsty_poi = function (connection, ex_area, obj, output) {
-  density = dbGetQuery(connection, sprintf("SELECT * INTO %s FROM
+dsty_poi = function (connection, ex_area, obj, output, overwrite="TRUE") {
+  
+  if(overwrite=="TRUE"){
+    print(sprintf("DROP TABLE IF EXISTS %s;",output))
+    dbGetQuery(connection,sprintf("DROP TABLE IF EXISTS %s;",output))
+  }
+  
+  density = dbGetQuery(connection, sprintf("DROP TABLE IF EXISTS %s;
+                                            SELECT * INTO %s FROM
                                            (SELECT %s.gid as GID, st_area(%s.geom)/1000000 AS ex_area_km2, 
                                            count(%s.geom) AS totale, 
                                            count(%s.geom)/(st_area(%s.geom)/1000000) AS density
                                            FROM %s LEFT JOIN %s
-                                           ON st_contains(%s.geom, %s.geom)
+                                           ON ST_Within(ST_TRANSFORM(%s.geom, 25833), %s.geom )
                                            GROUP BY %s.gid
                                            ORDER BY density DESC) AS foo;
                                            ALTER TABLE %s ADD PRIMARY KEY(GID);
-                                           SELECT * FROM %s;",
-                                           output, ex_area, ex_area, obj, obj, ex_area, ex_area, obj, ex_area, obj, ex_area, output, output))
+                                           --SELECT * FROM %s;",
+                                           output, output, ex_area, ex_area, obj, obj, ex_area, ex_area, obj, obj, ex_area,  ex_area, output, output))
   density
 }
 
@@ -74,7 +81,7 @@ dsty_poly = function (connection, ex_area, obj, output) {
                                            count(st_centroid(%s.geom)) AS totale,
                                            count(st_centroid(%s.geom))/(st_area(%s.geom)/1000000) AS density
                                            FROM %s LEFT JOIN %s
-                                           ON st_contains(%s.geom, st_centroid(%s.geom))
+                                           ON st_contains(%s.geom, st_transform(%s.geom, 25833))
                                            GROUP BY %s.gid
                                            ORDER BY density DESC) As foo;
                                            ALTER TABLE %s ADD PRIMARY KEY(GID);

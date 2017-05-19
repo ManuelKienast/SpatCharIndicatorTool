@@ -3,7 +3,7 @@
 #'
 #'
 #' @param connection : A connection to the PostGIS database.
-#' @param WriteToTable AS string -- Table to create and write results into
+#' @param ouputTable AS string -- Table to create and write results into
 #' @param schema1      AS string -- schema of table 1
 #' @param schema2      AS string -- schema of table 2
 #' @param table1       AS string -- table cotaining the point features = "mietobjekte", ## Point Feature Table
@@ -40,14 +40,12 @@
 psqlAvMean <- function(
   
   connection = con,
-  WriteToTable = "Mean",   ## Table name to create in PostGreSQL and write results into
-  schema1 = "public",      ## Pft schema
-  schema2 = "public",      ## table 2 schema
-  table1  = "mietobjekte", ## Point Feature Table
-  Id1     = "gid",         ## unique identifier
-  table2  = "tvz",         ## Grid table
-  Id2     = "code",        ## unique identifier per grid cell 2
-  geom1   = "geom",        ## geometry column of table 1
+  ouputTable = "veu_survey.berlin_num_restaurants_1km",   ## Table name to create in PostGreSQL and write results into    ## table 2 schema
+  table1  = "veu_survey.berlin_facilities_restaurant", ## Point Feature Table
+  Id1     = "id",         ## unique identifier
+  table2  = "veu_survey.berlin_adressen_2016_survey_buffer1km",         ## Grid table
+  Id2     = "gid",        ## unique identifier per grid cell 2
+  geom1   = "pos",        ## geometry column of table 1
   geom2   = "geom")        ## geometry column of table 2
   
   {
@@ -68,7 +66,7 @@ psqlAvMean <- function(
               count(%s.%s) AS count,
               %s.%s 
                 FROM %s,%s 
-                WHERE ST_Within (st_centroid(%s.%s), %s.%s)
+                WHERE ST_Within (st_centroid(ST_Transform(%s.%s, 25833)), %s.%s)
       GROUP BY %s.%s
       ORDER BY %s.%s) as counts)
       as Foo;
@@ -76,16 +74,16 @@ psqlAvMean <- function(
       
       SELECT * FROM %s;",
       
-      WriteToTable,
-      WriteToTable,
+      ouputTable,
+      ouputTable,
       table1, Id1,
       table2, Id2,
       table1, table2,
       table1, geom1, table2, geom2,
       table2, Id2,
       table2, Id2,
-      WriteToTable))
-  
+      ouputTable))
+
   AvMean
 }
 
