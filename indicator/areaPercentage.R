@@ -54,21 +54,21 @@ calcAreaRatio <- function( con,
 
   interSection <- dbGetQuery(con, sprintf(
 
-    "DROP TABLE IF EXISTS %s_intersec;
+    "DROP TABLE IF EXISTS public.%s_intersec;
 
-    CREATE TABLE %s_intersec (
+    CREATE TABLE public.%s_intersec (
       gid serial PRIMARY KEY,
       aggr_unit integer,
       use varchar(20));
 
-    ALTER TABLE %s_intersec ADD COLUMN geom geometry (MultiPolygon, 25833);
-    ALTER TABLE %s_intersec ADD COLUMN grid_geom geometry (Polygon, 25833);
+    ALTER TABLE public.%s_intersec ADD COLUMN geom geometry (MultiPolygon, 25833);
+    ALTER TABLE public.%s_intersec ADD COLUMN grid_geom geometry (MultiPolygon, 25833);
 
-    INSERT INTO %s_intersec (
+    INSERT INTO public.%s_intersec (
       SELECT
         row_number() over (order by 1) as gid,
         b.%s::numeric as aggr_unit,
-        a.%s as use,
+        a.%s as usage,
         ST_Multi(ST_Intersection(a.%s, b.%s))::geometry(MultiPolygon, 25833) as geom,
         b.%s AS grid_geom
           FROM %s.%s AS a,
@@ -76,6 +76,7 @@ calcAreaRatio <- function( con,
       WHERE ST_Intersects(a.%s, b.%s) AND ST_isvalid(a.%s) = TRUE);
       ",
     resultTable_name,
+    #resultTable_schema,
     resultTable_name,
     resultTable_name,
     resultTable_name,
